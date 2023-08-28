@@ -1,0 +1,19 @@
+{
+  "sub": {
+    "outputMode": "default",
+    "mqttVersion": 5,
+    "hostname": "localhost",
+    "clientId": "mqttx_12355546",
+    "clean": true,
+    "protocol": "mqtts",
+    "reconnectPeriod": 1000,
+    "maximumReconnectTimes": 10,
+    "reqProblemInfo": true,
+    "topic": [
+      "t/1"
+    ],
+    "ca": "./certs/cacert.pem",
+    "insecure": true,
+    "port": 8883
+  }
+}

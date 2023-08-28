@@ -1,0 +1,17 @@
+{
+  "sub": {
+    "outputMode": "default",
+    "mqttVersion": 5,
+    "hostname": "localhost",
+    "clientId": "mqttx_e095597c",
+    "clean": true,
+    "protocol": "mqtt",
+    "reconnectPeriod": 1000,
+    "maximumReconnectTimes": 10,
+    "reqProblemInfo": true,
+    "topic": [
+      "t/1"
+    ],
+    "port": 1883
+  }
+}
