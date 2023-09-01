@@ -1,0 +1,55 @@
+version: '3'
+services:
+  emqx1:
+    image: emqx/emqx:5.1.6
+    hostname: emqx1-cluster.emqx.io
+    container_name: emqx1
+    environment:
+      - EMQX_NODE__NAME=emqx1@emqx1-cluster.emqx.io
+      - EMQX_CLUSTER__DISCOVERY_STRATEGY=static
+      - EMQX_CLUSTER__STATIC__SEEDS=emqx1@emqx1-cluster.emqx.io,emqx2@emqx2-cluster.emqx.io,emqx3@emqx3-cluster.emqx.io
+      - EMQX_LISTENERS__SSL__DEFAULT__PROXY_PROTOCOL=true
+    ports:
+      - 18083:18083
+
+  emqx2:
+    image: emqx/emqx:5.1.6 
+    hostname: emqx2-cluster.emqx.io
+    container_name: emqx2
+    environment:
+      - EMQX_NODE__NAME=emqx2@emqx2-cluster.emqx.io
+      - EMQX_CLUSTER__DISCOVERY_STRATEGY=static
+      - EMQX_CLUSTER__STATIC__SEEDS=emqx1@emqx1-cluster.emqx.io,emqx2@emqx2-cluster.emqx.io,emqx3@emqx3-cluster.emqx.io   
+      - EMQX_LISTENERS__SSL__DEFAULT__PROXY_PROTOCOL=true
+
+  emqx3:
+    image: emqx/emqx:5.1.6
+    hostname: emqx3-cluster.emqx.io
+    container_name: emqx3
+    environment:
+      - EMQX_NODE__NAME=emqx3@emqx3-cluster.emqx.io
+      - EMQX_CLUSTER__DISCOVERY_STRATEGY=static
+      - EMQX_CLUSTER__STATIC__SEEDS=emqx1@emqx1-cluster.emqx.io,emqx2@emqx2-cluster.emqx.io,emqx3@emqx3-cluster.emqx.io
+      - EMQX_LISTENERS__SSL__DEFAULT__PROXY_PROTOCOL=true
+
+  haproxy:
+    image: haproxy:2.4.24
+    container_name: haproxy
+    ulimits:
+      nofile:
+        soft: 1024000
+        hard: 1024000
+    ports:
+      - 1883:1883
+      - 8883:8883
+      - 8083:8083 
+      - 8084:8084
+      - 8888:8888
+    volumes:
+      - $PWD/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - $PWD/certs:/etc/haproxy/certs
+    restart: always
+
+networks:
+  emqx-net:
+    driver: emqx-net
