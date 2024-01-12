@@ -1,7 +1,7 @@
 version: '3'
 services:
   emqx1:
-    image: emqx/emqx:5.1.6
+    image: emqx/emqx:5.4.1
     hostname: emqx1-cluster.emqx.io
     container_name: emqx1
     environment:
@@ -13,7 +13,7 @@ services:
       - 18083:18083
 
   emqx2:
-    image: emqx/emqx:5.1.6 
+    image: emqx/emqx:5.4.1 
     hostname: emqx2-cluster.emqx.io
     container_name: emqx2
     environment:
@@ -23,7 +23,7 @@ services:
       - EMQX_LISTENERS__SSL__DEFAULT__PROXY_PROTOCOL=true
 
   emqx3:
-    image: emqx/emqx:5.1.6
+    image: emqx/emqx:5.4.1
     hostname: emqx3-cluster.emqx.io
     container_name: emqx3
     environment:
