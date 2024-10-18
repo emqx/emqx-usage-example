@@ -4,7 +4,8 @@ This is a collection of scripts and configurations to demo EMQX Enterprise 5.8.1
 
 - Mutual TLS authentication.
 - Allow clients which can compute password from username using a secret salt to login.
-- Allow clients with client ID matching certain field in TLS certificate to login.
+- Deny clients which do not have client ID matching the TLS certificate common name (CN).
+- Use HTTP server for MQTT client authentication and client attributes injection.
 - Client attributes extraction.
   - Method 1: HTTP authentication which returns client attributes.
   - Method 2: Client attribute directly extracted from client TLS certificate subject (DN, distinguished name).
@@ -26,7 +27,7 @@ In this demo, EMQX is configured to authenticate clients at MQTT layer with 3 ch
 
 1. Allow clients which can compute password from username using a secret salt to login.
 2. Quick deny if MQTT client's client ID does not match TLS certificate's common name.
-3. If 1 and 2 is not conclusive, send username, password, and certificate to a HTTP server.
+3. If 1 and 2 is not conclusive, send clientid, username, password, and certificate to a HTTP server.
 
 Refer to: `config/authn.hocon`
 
@@ -61,7 +62,7 @@ Refer to: `config/mqtt.hocon`
 
 Both `key1` and `key2` of in client attributes will be added to MQTT v5 messages published by the client.
 
-Refer to: config/message-transform.hocon
+Refer to: `config/msg-trans.hocon`
 
 ## Start EMQX and Authentication server
 

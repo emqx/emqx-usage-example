@@ -1,15 +1,15 @@
 authentication = [
-  ## Check 1: user client information
+  ## Check 1: client information
   {
     mechanism = cinfo
     checks = [
       {
-        # allow clients which can compute password sha1 from a secret salt
+        # Allow clients which can compute password sha1 from a secret salt
         result = allow
         is_match = "str_eq(password,hash('sha1',concat([username,':magic-chicken'])))"
       },
       {
-        # deny clietns which do not have client-id the same as certificate common name
+        # Deny clients which do not have client-id the same as certificate common name
         is_match = "str_neq(clientid,cert_common_name)"
         result = deny
       }
@@ -24,6 +24,7 @@ authentication = [
     headers {content-type = "application/json"}
     body {
       cert = "${cert_pem}"
+      clientid = "${clientid}"
       username = "${username}"
       password = "${password}"
     }
