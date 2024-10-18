@@ -1,32 +1,31 @@
 authentication = [
+  ## Check 1, user client information
   {
+    mechanism = cinfo
     checks = [
       {
-        is_match = "str_eq(password,hash('sha1',concat([username,':magic-chicken'])))"
+        # allow clients which can compute password sha1 from a secret salt
         result = allow
+        is_match = "str_eq(password,hash('sha1',concat([username,':magic-chicken'])))"
       },
       {
+        # deny clietns which do not have client-id the same as certificate common name
         is_match = "str_neq(clientid,cert_common_name)"
         result = deny
       }
     ]
-    enable = true
-    mechanism = cinfo
   },
+  ## Check 2, if check 1 is not conclusive, let HTTP server make the decision
   {
+    mechanism = password_based
     backend = http
+    url = "http://auth-server:8000"
+    method = post
+    headers {content-type = "application/json"}
     body {
       cert = "${cert_pem}"
       username = "${username}"
       password = "${password}"
     }
-    connect_timeout = "15s"
-    enable = true
-    enable_pipelining = 100
-    headers {content-type = "application/json"}
-    mechanism = password_based
-    method = post
-    request_timeout = "5s"
-    url = "http://auth-server:8000"
   }
 ]

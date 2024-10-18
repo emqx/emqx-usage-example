@@ -21,6 +21,7 @@ services:
     ports:
       - "18083:18083"
       - "8883:8883"
+      - "1883:1883"
     volumes:
       - ./certs:/certs
       - ./config:/config
