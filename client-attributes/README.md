@@ -65,6 +65,8 @@ Refer to: config/message-transform.hocon
 
 ## Start EMQX and Authentication server
 
+Prerequisite: install docker.
+
 ```bash
 ./start.sh
 ```
@@ -77,6 +79,8 @@ $ curl -XPOST http://localhost:8000 --data @certs/auth-request.json
 ```
 
 ## Test MQTT client
+
+Prerequisite: install [mqttx](https://mqttx.app/downloads)
 
 ### Start subscriber
 
