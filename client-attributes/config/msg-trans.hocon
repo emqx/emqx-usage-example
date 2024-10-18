@@ -1,0 +1,27 @@
+message_transformation {
+  transformations = [
+    {
+      description = ""
+      enable = true
+      failure_action = drop
+      log_failure {level = warning}
+      name = "client-attrs-in-user-property"
+      operations = [
+        {
+          key = "user_property.key1"
+          value = "client_attrs.key1"
+        },
+        {
+          key = "user_property.key2"
+          value = "client_attrs.key2"
+        }
+      ]
+      payload_decoder {type = none}
+      payload_encoder {type = none}
+      topics = [
+        "t/#"
+      ]
+    }
+  ]
+}
+

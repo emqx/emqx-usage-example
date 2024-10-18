@@ -1,0 +1,8 @@
+mqtt {
+  client_attrs_init = [
+    {
+      expression = "nth(1,regex_extract(dn,'OU=([^,]+)'))"
+      set_as_attr = key2
+    }
+  ]
+}

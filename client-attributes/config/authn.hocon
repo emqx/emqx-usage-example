@@ -1,0 +1,32 @@
+authentication = [
+  {
+    checks = [
+      {
+        is_match = "str_eq(password,hash('sha1',concat([username,':magic-chicken'])))"
+        result = allow
+      },
+      {
+        is_match = "str_neq(clientid,cert_common_name)"
+        result = deny
+      }
+    ]
+    enable = true
+    mechanism = cinfo
+  },
+  {
+    backend = http
+    body {
+      cert = "${cert_pem}"
+      username = "${username}"
+      password = "${password}"
+    }
+    connect_timeout = "15s"
+    enable = true
+    enable_pipelining = 100
+    headers {content-type = "application/json"}
+    mechanism = password_based
+    method = post
+    request_timeout = "5s"
+    url = "http://auth-server:8000"
+  }
+]
