@@ -1,7 +1,6 @@
 message_transformation {
   transformations = [
     {
-      description = ""
       enable = true
       failure_action = drop
       log_failure {level = warning}

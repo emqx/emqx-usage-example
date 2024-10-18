@@ -1,5 +1,5 @@
 authentication = [
-  ## Check 1, user client information
+  ## Check 1: user client information
   {
     mechanism = cinfo
     checks = [
@@ -15,7 +15,7 @@ authentication = [
       }
     ]
   },
-  ## Check 2, if check 1 is not conclusive, let HTTP server make the decision
+  ## Check 2: if check 1 is not conclusive, let HTTP server make the decision
   {
     mechanism = password_based
     backend = http

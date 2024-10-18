@@ -1,6 +1,9 @@
 mqtt {
   client_attrs_init = [
     {
+      # extract OU from certificate DN
+      # input: CN=demo-cn-1,OU=demo-ou-1,O=MyOrgName,L=Stockholm,ST=Stockholm,C=SE
+      # output: demo-ou-1
       expression = "nth(1,regex_extract(dn,'OU=([^,]+)'))"
       set_as_attr = key2
     }
