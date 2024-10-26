@@ -27,10 +27,9 @@ However it does not mean it's the only way.
 
 Below are more possible solutions:
 
-- TLS SNI (Server name indication), wihch can be forwarded by LB.
-- Client ID prefix.
-- Username or username prefix.
-- JWT (as password) claim.
+- TLS SNI (Server name indication). If TLS is terminated by load balancer, it can still be forwarded to EMQX in proxy-protocol headers.
+- Sub-string of Client ID. For example, hyphen-separated prefix of the client ID.
+- Username (or sub-string).
 
 The tenant ID is stored as a client attribute named `tns`(as in tenant namespace).
 It technically can be named something else, however our plan is to make it a conventional client attribute key.
