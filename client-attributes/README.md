@@ -79,6 +79,8 @@ $ curl -XPOST http://localhost:8000 --data @certs/auth-request.json
 {"result": "allow", "client_attrs": {"key1": "demo-ou-1"}}
 ```
 
+Visit EMQX dashboard at URL [localhost:18083](http://localhost:18083). Login username is `admin` and password is also `admin`.
+
 ## Test MQTT client
 
 Prerequisite: install [mqttx](https://mqttx.app/downloads)
