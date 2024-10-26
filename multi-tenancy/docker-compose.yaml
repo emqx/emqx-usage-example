@@ -1,0 +1,34 @@
+services:
+  auth-server:
+    build: ./auth-server
+    hostname: auth-server
+    container_name: auth-server
+    networks:
+      - emqx-demo
+    ports:
+      - "8000:8000"
+    tty: true
+    volumes:
+      - ./auth-server/server.py:/server.py
+  emqx:
+    image: emqx/emqx-enterprise:5.8.1
+    hostname: emqx
+    container_name: emqx
+    networks:
+      - emqx-demo
+    environment:
+      - EMQX_API_KEY__BOOTSTRAP_FILE=/config/api-key-bootstrap
+      - EMQX_DASHBOARD__DEFAULT_PASSWORD=admin
+    ports:
+      - "18083:18083"
+      - "8883:8883"
+      - "1883:1883"
+    volumes:
+      - ./certs:/certs
+      - ./config:/config
+      - ./config/emqx.conf:/opt/emqx/etc/emqx.conf
+    depends_on:
+      - auth-server
+
+networks:
+  emqx-demo:

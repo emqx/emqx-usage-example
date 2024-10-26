@@ -1,0 +1,15 @@
+authentication = [
+  {
+    mechanism = password_based
+    backend = http
+    url = "http://auth-server:8000"
+    method = post
+    headers {content-type = "application/json"}
+    body {
+      dn = "${cert_subject}"
+      clientid = "${clientid}"
+      username = "${username}"
+      password = "${password}"
+    }
+  }
+]
