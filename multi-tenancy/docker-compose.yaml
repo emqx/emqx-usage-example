@@ -27,6 +27,7 @@ services:
       - ./certs:/certs
       - ./config:/config
       - ./config/emqx.conf:/opt/emqx/etc/emqx.conf
+      - ./config/acl.conf:/opt/emqx/etc/acl.conf
     depends_on:
       - auth-server
 

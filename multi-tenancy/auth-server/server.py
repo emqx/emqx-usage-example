@@ -22,8 +22,12 @@ def handle_post():
         data = json.loads(post_data.decode('utf-8'))
         # Extract the 'dn' field from the POST data
         dn = data.get('dn')
+        username = data.get('username')
         if not dn:
             return jsonify({"error": "No 'dn' field in request"}), 400
+
+        if not username:
+            return jsonify({"error": "No 'username' field in request"}), 400
 
         # Extract the OU from the DN string
         ou = extract_ou(dn)
@@ -34,7 +38,10 @@ def handle_post():
         acl = [{
             "permission": "allow",
             "action": "all",
-            "topics": [f"{ou}/#"]
+            # as of EMQX 5.8, the ACL checks do not support mountpoints
+            # starting from 5.9, it should be changed to this:
+            # "topics": [f"{ou}/{username}/#"]
+            "topics": [f"{username}/#"]
         }]
         response = {
                 "result": "allow",

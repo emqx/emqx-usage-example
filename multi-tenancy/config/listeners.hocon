@@ -10,7 +10,12 @@ listeners {
       enable_authn = true
       max_conn_rate = infinity
       max_connections = infinity
+
+      # mountpoint is the way to go before 5.9
+      # Starting from 5.9, if client has a 'tns' attribute
+      # it will automatically become the mountpoint
       mountpoint = "${client_attrs.tns}/"
+
       proxy_protocol = false
       proxy_protocol_timeout = "3s"
       ssl_options {
