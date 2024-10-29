@@ -48,20 +48,22 @@ An HTTP server to return authentication results together with authorization (ACL
         {
             "permission": "allow",
             "action": "all",
-            "topics": ["demo-ou-1/#"]
+            "topics": ["user-1/#"]
         }
     ]
 }
 ```
 
 NOTE: HTTP auth demo is only to show how one can implement ACL rules in authorization response.
+And it does not include mountpoint for the tpics.
 In the future, EMQX may support an implicit 'allow all' rule for `${client_attrs.tns}/#` topic.
 so one should not have to explicitly state it.
 
 TIP: Same can be achieved with file based ACL rules. For example
 
 ```
-{allow, all, all, ["${client_attrs.tns}/#"]}.
+% this is yet to be supported in 5.9
+{allow, all, all, ["${client_attrs.tns}/${username}/#"]}.
 ```
 
 Refer to: `config/authn.hocon`
