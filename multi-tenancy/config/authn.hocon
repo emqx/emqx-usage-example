@@ -6,7 +6,7 @@ authentication = [
     method = post
     headers {content-type = "application/json"}
     body {
-      dn = "${cert_subject}"
+      tenant_namespace = "${client_attrs.tns}"
       clientid = "${clientid}"
       username = "${username}"
       password = "${password}"

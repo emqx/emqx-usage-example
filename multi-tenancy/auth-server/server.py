@@ -4,43 +4,25 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-
-# Define a regular expression pattern to extract the OU value
-# This pattern handles potential spaces around '=' and ensures we only match the 'OU' field.
-ou_pattern = re.compile(r'\bOU\s*=\s*([^,]+)')
-
-def extract_ou(dn):
-    match = ou_pattern.search(dn)
-    if match:
-        return match.group(1).strip()  # Return the matched OU value, stripping any extra spaces
-    return None  # Return None if no OU is found
-
 @app.route('/', methods=['POST'])
 def handle_post():
     try:
         post_data = request.get_data()
         data = json.loads(post_data.decode('utf-8'))
-        # Extract the 'dn' field from the POST data
-        dn = data.get('dn')
         username = data.get('username')
-        if not dn:
-            return jsonify({"error": "No 'dn' field in request"}), 400
-
         if not username:
             return jsonify({"error": "No 'username' field in request"}), 400
 
-        # Extract the OU from the DN string
-        ou = extract_ou(dn)
-        if not ou:
-            return jsonify({"error": "No 'OU' found in 'dn' field"}), 400
+        tns = data.get('tenant_namespace')
+        # in this demo, we only check the existence of tns (tenant namespace)
+        if not tns or tns == '':
+            return jsonify({"error": "No 'tns' field in request"}), 400
 
-        # Create the response object
+        # Create the response object array
         acl = [{
             "permission": "allow",
             "action": "all",
-            # as of EMQX 5.8, the ACL checks do not support mountpoints
-            # starting from 5.9, it should be changed to this:
-            # "topics": [f"{ou}/{username}/#"]
+            # The ACL rules should define permissions *without* tns prefix.
             "topics": [f"{username}/#"]
         }]
         response = {
@@ -49,7 +31,6 @@ def handle_post():
         }
         # Return the response with status 200
         return jsonify(response), 200
-
 
     except Exception as e:
         print(f"Error: {str(e)}")

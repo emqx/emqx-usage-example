@@ -13,7 +13,8 @@ listeners {
 
       # mountpoint is the way to go before 5.9
       # Starting from 5.9, if client has a 'tns' attribute
-      # it will automatically become the mountpoint
+      # it will be automatically prepended,
+      # so there should be no need to configure mountpoint for listener.
       mountpoint = "${client_attrs.tns}/"
 
       proxy_protocol = false
