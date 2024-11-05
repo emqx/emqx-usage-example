@@ -1,4 +1,6 @@
 import json
+import signal
+import sys
 from flask import Flask, request, jsonify
 from cryptography import x509
 import base64
@@ -31,5 +33,10 @@ def handle_post():
         print(f"Error: {str(e)}")
         return jsonify({"error": "Failed to process request"}), 500
 
+def handle_sigterm(*args):
+    print("Shutting down...")
+    sys.exit(0)
+
 if __name__ == '__main__':
+    signal.signal(signal.SIGTERM, handle_sigterm)
     app.run(host='0.0.0.0', port=8000)
