@@ -1,0 +1,15 @@
+authentication = [
+  {
+    mechanism = password_based
+    backend = http
+    url = "http://auth-server:8000"
+    method = post
+    headers {content-type = "application/json"}
+    body {
+      vin = "${cert_common_name}"
+      # username and password are not used in this demo
+      username = "${username}"
+      password = "${password}"
+    }
+  }
+]

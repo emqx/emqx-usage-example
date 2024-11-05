@@ -1,0 +1,33 @@
+listeners {
+  tcp {
+    default {
+      acceptors = 16
+      access_rules = [
+        "allow all"
+      ]
+      bind = "0.0.0.0:1883"
+      enable = true
+      enable_authn = true
+      max_conn_rate = 200
+      max_connections = infinity
+      mountpoint = ""
+      proxy_protocol = true
+      proxy_protocol_timeout = "3s"
+      tcp_options {
+        active_n = 10
+        backlog = 1024
+        buffer = "4KB"
+        high_watermark = "1MB"
+        keepalive = none
+        nodelay = true
+        reuseaddr = true
+        send_timeout = "15s"
+        send_timeout_close = true
+      }
+      zone = default
+    }
+  }
+  ssl.default = marked_for_deletion
+  ws.default = marked_for_deletion
+  wss.default = marked_for_deletion
+}

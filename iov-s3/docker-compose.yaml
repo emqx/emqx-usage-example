@@ -1,0 +1,76 @@
+services:
+  auth-server:
+    build: ./auth-server
+    hostname: auth-server
+    container_name: auth-server
+    networks:
+      - demo-net
+    ports:
+      - "8000:8000"
+    tty: true
+    volumes:
+      - ./auth-server/server.py:/server.py
+
+  # s3 file upload
+  s3:
+    hostname: s3
+    image: quay.io/minio/minio:RELEASE.2023-03-20T20-16-18Z
+    container_name: s3
+    command: server --address ":9000" --console-address ":9001" /minio-data
+    environment:
+      MINIO_ROOT_USER: ACCESSKEY
+      MINIO_ROOT_PASSWORD: SECRETKEY
+    expose:
+      - "9000"
+      - "9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - demo-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  emqx:
+    image: emqx/emqx-enterprise:5.8.1
+    hostname: emqx
+    container_name: emqx
+    networks:
+      - demo-net
+    environment:
+      - EMQX_API_KEY__BOOTSTRAP_FILE=/config/api-key-bootstrap
+      - EMQX_DASHBOARD__DEFAULT_PASSWORD=admin
+    ports:
+      - "18083:18083"
+    volumes:
+      - ./certs:/certs
+      - ./config:/config
+      - ./config/emqx.conf:/opt/emqx/etc/emqx.conf
+      - ./config/acl.conf:/opt/emqx/etc/acl.conf
+    depends_on:
+      - auth-server
+      - s3
+
+  # Load balancer which terminates TLS and forward certfificate CN
+  haproxy:
+    image: haproxy:2.4.24
+    container_name: haproxy
+    networks:
+      - demo-net
+    ulimits:
+      nofile:
+        soft: 1024000
+        hard: 1024000
+    ports:
+      - 8883:8883
+      - 8889:8888
+    volumes:
+      - ./config/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./certs:/certs
+    restart: always
+
+networks:
+  demo-net:
