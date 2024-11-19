@@ -73,11 +73,6 @@ resource "aws_security_group" "vpc_sg" {
   vpc_id      = aws_vpc.vpc.id
 }
 
-resource "aws_key_pair" "kp" {
-  key_name   = var.prefix
-  public_key = var.public_key
-}
-
 resource "aws_iam_policy" "ec2_policy" {
   name        = "${var.prefix}-${var.vpc_region}"
   path        = "/"

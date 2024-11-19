@@ -18,22 +18,8 @@ provider "aws" {
 }
 
 locals {
-  ssh_key_name      = var.prefix
-  ssh_key_path      = pathexpand(format("./%s.pem", replace(local.ssh_key_name, "/", "-")))
   route53_zone_name = replace("${var.prefix}.emqx.io", "/", "-")
   srv_record_name   = "emqx-srv.${local.route53_zone_name}"
-}
-
-resource "tls_private_key" "pk" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-resource "local_sensitive_file" "pem_file" {
-  filename             = local.ssh_key_path
-  file_permission      = "600"
-  directory_permission = "700"
-  content              = tls_private_key.pk.private_key_pem
 }
 
 module "vpc" {
@@ -41,7 +27,6 @@ module "vpc" {
   prefix     = var.prefix
   cidr       = var.vpc_cidr
   vpc_region = var.region
-  public_key = tls_private_key.pk.public_key_openssh
 }
 
 module "public_nlb" {
@@ -128,11 +113,6 @@ module "emqx_core_asg" {
   certs = module.certs.certs
 
   extra_user_data = <<-EOF
-    mkdir -p /home/ubuntu/.ssh
-    echo "${tls_private_key.pk.public_key_openssh}" > /home/ubuntu/.ssh/authorized_keys
-    chmod 600 /home/ubuntu/.ssh/authorized_keys
-    chown ubuntu:ubuntu /home/ubuntu/.ssh/authorized_keys
-
     curl -s https://assets.emqx.com/scripts/install-emqx-deb.sh | bash
     apt-get install emqx
     systemctl stop emqx
@@ -140,6 +120,7 @@ module "emqx_core_asg" {
     echo "cluster.discovery_strategy = dns" >> /etc/emqx/emqx.conf
     echo "cluster.dns.name = ${local.srv_record_name}" >> /etc/emqx/emqx.conf
     echo "cluster.dns.record_type = srv" >> /etc/emqx/emqx.conf
+    echo "dashboard.default_password = admin" >> /etc/emqx/emqx.conf
     systemctl enable --now emqx
   EOF
 

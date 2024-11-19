@@ -26,10 +26,6 @@ output "security_group_id" {
   value = aws_security_group.vpc_sg.id
 }
 
-output "key_name" {
-  value = aws_key_pair.kp.key_name
-}
-
 output "aws_iam_instance_profile" {
   value = aws_iam_instance_profile.ec2_profile.name
 }

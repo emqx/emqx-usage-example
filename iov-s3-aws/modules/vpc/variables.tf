@@ -9,7 +9,3 @@ variable "cidr" {
 variable "vpc_region" {
   type = string
 }
-
-variable "public_key" {
-  type = string
-}
