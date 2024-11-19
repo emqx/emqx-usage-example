@@ -89,14 +89,11 @@ resource "aws_iam_policy" "ec2_policy" {
       {
         "Effect" : "Allow",
         "Action" : [
-          "route53:ChangeResourceRecordSets",
-          "route53:ChangeTagsForResource",
-          "route53:GetChange",
-          "route53:GetHostedZone",
-          "route53:ListResourceRecordSets",
-          "route53:ListTagsForResource",
           "s3:GetObject",
-          "s3:List*"
+          "s3:List*",
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
         ],
         "Resource" : [
           "*"
@@ -128,6 +125,11 @@ resource "aws_iam_policy_attachment" "ec2_policy_role" {
   name       = "${var.prefix}-${var.vpc_region}"
   roles      = [aws_iam_role.ec2_role.name]
   policy_arn = aws_iam_policy.ec2_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_role_policy_attachment" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
@@ -177,4 +179,31 @@ resource "aws_route_table_association" "private" {
   count          = length(aws_subnet.private)
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private.id
+}
+
+resource "aws_vpc_endpoint" "ssm" {
+  vpc_id = aws_vpc.vpc.id
+  service_name = "com.amazonaws.${var.vpc_region}.ssm"
+  vpc_endpoint_type = "Interface"
+  private_dns_enabled = true
+  security_group_ids = [aws_security_group.vpc_sg.id]
+  subnet_ids = aws_subnet.private[*].id
+}
+
+resource "aws_vpc_endpoint" "ssm_messages" {
+  vpc_id = aws_vpc.vpc.id
+  service_name = "com.amazonaws.${var.vpc_region}.ssmmessages"
+  vpc_endpoint_type = "Interface"
+  private_dns_enabled = true
+  security_group_ids = [aws_security_group.vpc_sg.id]
+  subnet_ids = aws_subnet.private[*].id
+}
+
+resource "aws_vpc_endpoint" "kms" {
+  vpc_id = aws_vpc.vpc.id
+  service_name = "com.amazonaws.${var.vpc_region}.kms"
+  vpc_endpoint_type = "Interface"
+  private_dns_enabled = true
+  security_group_ids = [aws_security_group.vpc_sg.id]
+  subnet_ids = aws_subnet.private[*].id
 }

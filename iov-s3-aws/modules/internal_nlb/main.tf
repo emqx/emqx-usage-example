@@ -44,6 +44,8 @@ resource "aws_lb_target_group" "mqtt" {
   vpc_id                            = var.vpc_id
   target_type                       = "instance"
   load_balancing_cross_zone_enabled = true
+  connection_termination            = true
+  deregistration_delay              = 0
   health_check {
     interval            = 30
     port                = 1883
@@ -60,6 +62,8 @@ resource "aws_lb_target_group" "mqtts" {
   vpc_id                            = var.vpc_id
   target_type                       = "instance"
   load_balancing_cross_zone_enabled = true
+  connection_termination            = true
+  deregistration_delay              = 0
   health_check {
     interval            = 30
     port                = 8883
@@ -76,6 +80,8 @@ resource "aws_lb_target_group" "httpapi" {
   vpc_id                            = var.vpc_id
   target_type                       = "instance"
   load_balancing_cross_zone_enabled = true
+  connection_termination            = true
+  deregistration_delay              = 0
   health_check {
     interval            = 30
     port                = 18083

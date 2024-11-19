@@ -2,6 +2,8 @@
 
 set -x
 
+systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+
 if which apt >/dev/null 2>&1; then
     apt update -y
     apt install -y curl wget zip unzip net-tools dnsutils ca-certificates gnupg lsb-release jq git python3-pip

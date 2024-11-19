@@ -85,59 +85,80 @@ resource "aws_lb_listener" "prometheus" {
 }
 
 resource "aws_lb_target_group" "emqx-dashboard" {
-  name        = "${var.prefix}-emqx"
-  port        = 18083
-  protocol    = "TCP"
-  target_type = "instance"
-  vpc_id      = var.vpc_id
+  name                              = "${var.prefix}-emqx"
+  port                              = 18083
+  protocol                          = "TCP"
+  target_type                       = "instance"
+  vpc_id                            = var.vpc_id
+  load_balancing_cross_zone_enabled = true
+  connection_termination            = true
+  deregistration_delay              = 0
 }
 
 resource "aws_lb_target_group" "emqx-mqtt" {
-  name        = "${var.prefix}-emqx-mqtt"
-  port        = 1883
-  protocol    = "TCP"
-  target_type = "instance"
-  vpc_id      = var.vpc_id
+  name                              = "${var.prefix}-emqx-mqtt"
+  port                              = 1883
+  protocol                          = "TCP"
+  target_type                       = "instance"
+  vpc_id                            = var.vpc_id
+  load_balancing_cross_zone_enabled = true
+  connection_termination            = true
+  deregistration_delay              = 0
 }
 
 resource "aws_lb_target_group" "emqx-mqtts" {
-  name        = "${var.prefix}-emqx-mqtts"
-  port        = 8883
-  protocol    = "TCP"
-  target_type = "instance"
-  vpc_id      = var.vpc_id
+  name                              = "${var.prefix}-emqx-mqtts"
+  port                              = 8883
+  protocol                          = "TCP"
+  target_type                       = "instance"
+  vpc_id                            = var.vpc_id
+  load_balancing_cross_zone_enabled = true
+  connection_termination            = true
+  deregistration_delay              = 0
 }
 
 resource "aws_lb_target_group" "emqx-ws" {
-  name        = "${var.prefix}-emqx-ws"
-  port        = 8083
-  protocol    = "TCP"
-  target_type = "instance"
-  vpc_id      = var.vpc_id
+  name                              = "${var.prefix}-emqx-ws"
+  port                              = 8083
+  protocol                          = "TCP"
+  target_type                       = "instance"
+  vpc_id                            = var.vpc_id
+  load_balancing_cross_zone_enabled = true
+  connection_termination            = true
+  deregistration_delay              = 0
 }
 
 resource "aws_lb_target_group" "emqx-wss" {
-  name        = "${var.prefix}-emqx-wss"
-  port        = 8084
-  protocol    = "TCP"
-  target_type = "instance"
-  vpc_id      = var.vpc_id
+  name                              = "${var.prefix}-emqx-wss"
+  port                              = 8084
+  protocol                          = "TCP"
+  target_type                       = "instance"
+  vpc_id                            = var.vpc_id
+  load_balancing_cross_zone_enabled = true
+  connection_termination            = true
+  deregistration_delay              = 0
 }
 
 resource "aws_lb_target_group" "grafana" {
-  name        = "${var.prefix}-grafana"
-  port        = 3000
-  protocol    = "TCP"
-  target_type = "instance"
-  vpc_id      = var.vpc_id
+  name                              = "${var.prefix}-grafana"
+  port                              = 3000
+  protocol                          = "TCP"
+  target_type                       = "instance"
+  vpc_id                            = var.vpc_id
+  load_balancing_cross_zone_enabled = true
+  connection_termination            = true
+  deregistration_delay              = 0
 }
 
 resource "aws_lb_target_group" "prometheus" {
-  name        = "${var.prefix}-prometheus"
-  port        = 9090
-  protocol    = "TCP"
-  target_type = "instance"
-  vpc_id      = var.vpc_id
+  name                              = "${var.prefix}-prometheus"
+  port                              = 9090
+  protocol                          = "TCP"
+  target_type                       = "instance"
+  vpc_id                            = var.vpc_id
+  load_balancing_cross_zone_enabled = true
+  connection_termination            = true
+  deregistration_delay              = 0
 }
 
 resource "aws_security_group" "nlb_sg" {

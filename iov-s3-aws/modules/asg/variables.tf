@@ -74,3 +74,8 @@ variable "lb_target_group_arns" {
   description = "List of ARNs of the target groups for the ASG"
   type        = list(string)
 }
+
+variable "iam_instance_profile" {
+  description = "IAM instance profile for the instances"
+  type        = string
+}

@@ -1,5 +1,5 @@
 locals {
-  function_name = "${var.asg_name}_terminate_handler"
+  function_name = "${var.asg_name}_event_handler"
 }
 
 resource "aws_sns_topic" "asg_events_topic" {
@@ -37,6 +37,7 @@ resource "aws_iam_policy" "lambda_policy" {
         Effect = "Allow"
         Action = [
           "autoscaling:CompleteLifecycleAction",
+          "ec2:DescribeInstances",
           "route53:ChangeResourceRecordSets",
           "route53:ChangeTagsForResource",
           "route53:GetChange",

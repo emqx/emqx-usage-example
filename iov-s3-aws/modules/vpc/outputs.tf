@@ -29,3 +29,7 @@ output "security_group_id" {
 output "key_name" {
   value = aws_key_pair.kp.key_name
 }
+
+output "aws_iam_instance_profile" {
+  value = aws_iam_instance_profile.ec2_profile.name
+}

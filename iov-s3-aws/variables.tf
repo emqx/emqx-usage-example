@@ -46,7 +46,7 @@ variable "emqx_license_file" {
 
 variable "emqx_core_count" {
   type    = number
-  default = 1
+  default = 2
 }
 
 variable "emqx_replicant_count" {

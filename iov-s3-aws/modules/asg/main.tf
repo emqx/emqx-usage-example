@@ -1,6 +1,9 @@
 resource "aws_launch_template" "lt" {
   image_id      = data.aws_ami.selected.id
   instance_type = var.instance_type
+  iam_instance_profile {
+    name = var.iam_instance_profile
+  }
 
   network_interfaces {
     security_groups = [var.security_group_id]
