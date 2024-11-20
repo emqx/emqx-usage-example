@@ -19,7 +19,9 @@ provider "aws" {
 
 locals {
   route53_zone_name = replace("${var.prefix}.emqx.io", "/", "-")
-  srv_record_name   = "emqx-srv.${local.route53_zone_name}"
+  static_seeds = [
+    for i in range(0, 2) : "emqx@emqx-core-${i}.${local.route53_zone_name}"
+  ]
 }
 
 module "vpc" {
@@ -82,13 +84,22 @@ resource "aws_security_group_rule" "allow_access_from_internal_nlb" {
 }
 
 module "emqx_core_asg" {
-  source = "./modules/asg"
-  name   = "${var.prefix}-emqx-core"
+  count             = 2
+  source            = "./modules/asg"
+  name              = "${var.prefix}-emqx-core${count.index}"
+  register_hostname = true
+  hostname          = "emqx-core-${count.index}.${local.route53_zone_name}"
+  instance_type     = "t3.large"
+  ami_filter        = var.ami_filter
+  ami_owner         = var.ami_owner
+  route53_zone_id   = aws_route53_zone.vpc.zone_id
+  certs             = module.certs.certs
 
   vpc_id               = module.vpc.vpc_id
-  subnet_ids           = module.vpc.private_subnet_ids
+  subnet_ids           = [module.vpc.private_subnet_ids[count.index]]
   security_group_id    = module.vpc.security_group_id
   iam_instance_profile = module.vpc.aws_iam_instance_profile
+
   lb_target_group_arns = [
     module.public_nlb.emqx_dashboard_target_group_arn,
     module.public_nlb.emqx_mqtt_target_group_arn,
@@ -100,52 +111,41 @@ module "emqx_core_asg" {
     module.internal_nlb.httpapi_target_group_arn
   ]
 
-  min_size         = var.emqx_core_count
-  max_size         = var.emqx_core_count
-  desired_capacity = var.emqx_core_count
-
-  instance_type = "t3.large"
-  ami_filter    = var.ami_filter
-  ami_owner     = var.ami_owner
-
-  route53_zone_id = aws_route53_zone.vpc.zone_id
-
-  certs = module.certs.certs
+  min_size         = 1
+  max_size         = 1
+  desired_capacity = 1
 
   extra_user_data = <<-EOF
     curl -s https://assets.emqx.com/scripts/install-emqx-deb.sh | bash
     apt-get install emqx
     systemctl stop emqx
-    echo "node.name = emqx@$(hostname -f)" >> /etc/emqx/emqx.conf
-    echo "cluster.discovery_strategy = dns" >> /etc/emqx/emqx.conf
-    echo "cluster.dns.name = ${local.srv_record_name}" >> /etc/emqx/emqx.conf
-    echo "cluster.dns.record_type = srv" >> /etc/emqx/emqx.conf
+    echo "node.name = \"emqx@$(hostname -f)\"" >> /etc/emqx/emqx.conf
+    echo "cluster.discovery_strategy = static" >> /etc/emqx/emqx.conf
+    echo "cluster.static.seeds = [\"${local.static_seeds[0]}\", \"${local.static_seeds[1]}\"]" >> /etc/emqx/emqx.conf
     echo "dashboard.default_password = admin" >> /etc/emqx/emqx.conf
     systemctl enable --now emqx
   EOF
 
   depends_on = [
-    module.vpc,
     module.public_nlb,
     module.internal_nlb,
-    module.certs
   ]
 }
 
-resource "aws_route53_record" "emqx_srv" {
-  zone_id = aws_route53_zone.vpc.zone_id
-  name    = local.srv_record_name
-  type    = "SRV"
-  ttl     = "60"
-  records = [
-    "10 20 1883 ${module.internal_nlb.dns_name}"
-  ]
-}
+# resource "aws_route53_record" "emqx_srv" {
+#   zone_id = aws_route53_zone.vpc.zone_id
+#   name    = local.srv_record_name
+#   type    = "SRV"
+#   ttl     = "60"
+#   records = [
+#     "10 20 1883 ${module.internal_nlb.dns_name}"
+#   ]
+# }
 
-module "emqx_asg_event_handler" {
-  source          = "./modules/emqx_asg_event_handler"
-  asg_name        = module.emqx_core_asg.name
-  region          = var.region
-  route53_zone_id = aws_route53_zone.vpc.zone_id
-  srv_record_name = local.srv_record_name
-}
+# module "emqx_asg_event_handler" {
+#   source          = "./modules/emqx_asg_event_handler"
+#   asg_name        = module.emqx_core_asg.name
+#   region          = var.region
+#   route53_zone_id = aws_route53_zone.vpc.zone_id
+#   srv_record_name = local.srv_record_name
+# }

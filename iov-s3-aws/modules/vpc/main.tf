@@ -84,6 +84,10 @@ resource "aws_iam_policy" "ec2_policy" {
       {
         "Effect" : "Allow",
         "Action" : [
+          "route53:ListHostedZones",
+          "route53:ListResourceRecordSets",
+          "route53:ChangeResourceRecordSets",
+          "route53:GetHostedZone",
           "s3:GetObject",
           "s3:List*",
           "logs:CreateLogGroup",
@@ -156,6 +160,10 @@ resource "aws_nat_gateway" "nat" {
   depends_on = [aws_internet_gateway.igw]
 }
 
+resource "aws_egress_only_internet_gateway" "egress" {
+  vpc_id = aws_vpc.vpc.id
+}
+
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.vpc.id
 
@@ -170,6 +178,12 @@ resource "aws_route" "private_nat" {
   destination_cidr_block = "0.0.0.0/0"
 }
 
+resource "aws_route" "private_ipv6_egress" {
+  route_table_id              = aws_route_table.private.id
+  egress_only_gateway_id      = aws_egress_only_internet_gateway.egress.id
+  destination_ipv6_cidr_block = "::/0"
+}
+
 resource "aws_route_table_association" "private" {
   count          = length(aws_subnet.private)
   subnet_id      = aws_subnet.private[count.index].id
@@ -177,28 +191,28 @@ resource "aws_route_table_association" "private" {
 }
 
 resource "aws_vpc_endpoint" "ssm" {
-  vpc_id = aws_vpc.vpc.id
-  service_name = "com.amazonaws.${var.vpc_region}.ssm"
-  vpc_endpoint_type = "Interface"
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.${var.vpc_region}.ssm"
+  vpc_endpoint_type   = "Interface"
   private_dns_enabled = true
-  security_group_ids = [aws_security_group.vpc_sg.id]
-  subnet_ids = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpc_sg.id]
+  subnet_ids          = aws_subnet.private[*].id
 }
 
 resource "aws_vpc_endpoint" "ssm_messages" {
-  vpc_id = aws_vpc.vpc.id
-  service_name = "com.amazonaws.${var.vpc_region}.ssmmessages"
-  vpc_endpoint_type = "Interface"
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.${var.vpc_region}.ssmmessages"
+  vpc_endpoint_type   = "Interface"
   private_dns_enabled = true
-  security_group_ids = [aws_security_group.vpc_sg.id]
-  subnet_ids = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpc_sg.id]
+  subnet_ids          = aws_subnet.private[*].id
 }
 
 resource "aws_vpc_endpoint" "kms" {
-  vpc_id = aws_vpc.vpc.id
-  service_name = "com.amazonaws.${var.vpc_region}.kms"
-  vpc_endpoint_type = "Interface"
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.${var.vpc_region}.kms"
+  vpc_endpoint_type   = "Interface"
   private_dns_enabled = true
-  security_group_ids = [aws_security_group.vpc_sg.id]
-  subnet_ids = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpc_sg.id]
+  subnet_ids          = aws_subnet.private[*].id
 }

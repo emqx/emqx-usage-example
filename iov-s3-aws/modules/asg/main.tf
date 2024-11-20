@@ -10,10 +10,12 @@ resource "aws_launch_template" "lt" {
   }
 
   user_data = base64encode(templatefile("${path.module}/userdata.sh", {
-    hosted_zone_id = var.route53_zone_id
-    asg_name       = var.name
-    certs          = var.certs
-    extra          = var.extra_user_data
+    hosted_zone_id    = var.route53_zone_id
+    register_hostname = var.register_hostname
+    hostname          = var.hostname
+    asg_name          = var.name
+    certs             = var.certs
+    extra             = var.extra_user_data
   }))
 }
 

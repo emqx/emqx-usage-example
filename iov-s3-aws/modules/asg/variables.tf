@@ -79,3 +79,14 @@ variable "iam_instance_profile" {
   description = "IAM instance profile for the instances"
   type        = string
 }
+
+variable "register_hostname" {
+  description = "Register the hostname of the instances in Route53"
+  type        = bool
+  default     = false
+}
+
+variable "hostname" {
+  description = "Hostname for the instances"
+  type        = string
+}

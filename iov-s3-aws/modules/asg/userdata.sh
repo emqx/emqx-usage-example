@@ -18,6 +18,13 @@ if which apt >/dev/null 2>&1; then
     apt-get purge -y unattended-upgrades
 fi
 
+token=$(curl -sSL -X PUT --retry 40 --retry-connrefused --retry-delay 5 "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 180")
+curl -sSL --retry 40 --retry-connrefused --retry-delay 5 -H "X-aws-ec2-metadata-token: $token" http://169.254.169.254/latest/dynamic/instance-identity/document > /tmp/instance-identity.json
+
+wget -q https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip -O /tmp/awscliv2.zip
+unzip -q /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install
+
 case $(uname -m) in
     x86_64)
         curl -fsSL https://www.emqx.com/en/downloads/MQTTX/v1.11.0/mqttx-cli-linux-x64 -o mqttx-cli-linux
@@ -53,5 +60,14 @@ echo "${certs.client_key}" > /etc/ssl/certs/emqx/client-key.pem
 # create bundles
 cat /etc/ssl/certs/emqx/cert.pem /etc/ssl/certs/emqx/cacert.pem > /etc/ssl/certs/emqx/server-bundle.pem
 cat /etc/ssl/certs/emqx/client-cert.pem /etc/ssl/certs/emqx/cacert.pem > /etc/ssl/certs/emqx/client-bundle.pem
+
+if [ ${register_hostname} == "true" ]; then
+    hostnamectl set-hostname ${hostname}
+    private_ip=$(curl -fsSL -H "X-aws-ec2-metadata-token: $token" http://169.254.169.254/latest/meta-data/local-ipv4)
+    cat > /tmp/change-resource-record-sets.json <<EOF
+{ "Changes": [ { "Action": "UPSERT", "ResourceRecordSet": { "Name": "${hostname}", "Type": "A", "TTL": 60, "ResourceRecords": [ { "Value": "$private_ip" } ] } } ] }
+EOF
+    aws route53 change-resource-record-sets --hosted-zone-id ${hosted_zone_id} --change-batch file:///tmp/change-resource-record-sets.json
+fi
 
 ${extra}
