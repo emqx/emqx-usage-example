@@ -116,8 +116,8 @@ module "emqx_core_asg" {
   desired_capacity = 1
 
   extra_user_data = <<-EOF
-    curl -s https://assets.emqx.com/scripts/install-emqx-deb.sh | bash
-    apt-get install emqx
+    curl -s https://packagecloud.io/install/repositories/emqx/emqx-enterprise5/script.deb.sh | bash
+    apt-get install emqx-enterprise
     systemctl stop emqx
     echo "node.name = \"emqx@$(hostname -f)\"" >> /etc/emqx/emqx.conf
     echo "cluster.discovery_strategy = static" >> /etc/emqx/emqx.conf
@@ -131,21 +131,3 @@ module "emqx_core_asg" {
     module.internal_nlb,
   ]
 }
-
-# resource "aws_route53_record" "emqx_srv" {
-#   zone_id = aws_route53_zone.vpc.zone_id
-#   name    = local.srv_record_name
-#   type    = "SRV"
-#   ttl     = "60"
-#   records = [
-#     "10 20 1883 ${module.internal_nlb.dns_name}"
-#   ]
-# }
-
-# module "emqx_asg_event_handler" {
-#   source          = "./modules/emqx_asg_event_handler"
-#   asg_name        = module.emqx_core_asg.name
-#   region          = var.region
-#   route53_zone_id = aws_route53_zone.vpc.zone_id
-#   srv_record_name = local.srv_record_name
-# }
