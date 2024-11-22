@@ -9,165 +9,53 @@ resource "aws_lb" "nlb" {
 
 resource "aws_lb_listener" "emqx-dashboard" {
   load_balancer_arn = aws_lb.nlb.arn
-  port              = "18083"
-  protocol          = "TCP"
+  port              = 443
+  protocol          = "TLS"
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+
+  certificate_arn = aws_acm_certificate_validation.validation.certificate_arn
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.emqx-dashboard.arn
-  }
-}
-
-resource "aws_lb_listener" "mqtt" {
-  load_balancer_arn = aws_lb.nlb.arn
-  port              = "1883"
-  protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.emqx-mqtt.arn
+    target_group_arn = var.dashboard_target_group_arn
   }
 }
 
 resource "aws_lb_listener" "mqtts" {
   load_balancer_arn = aws_lb.nlb.arn
   port              = "8883"
-  protocol          = "TCP"
+  protocol          = "TLS"
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+
+  certificate_arn = aws_acm_certificate_validation.validation.certificate_arn
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.emqx-mqtts.arn
-  }
-}
-
-resource "aws_lb_listener" "emqx-ws" {
-  load_balancer_arn = aws_lb.nlb.arn
-  port              = "8083"
-  protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.emqx-ws.arn
+    target_group_arn = var.mqtts_target_group_arn
   }
 }
 
 resource "aws_lb_listener" "emqx-wss" {
   load_balancer_arn = aws_lb.nlb.arn
   port              = "8084"
-  protocol          = "TCP"
+  protocol          = "TLS"
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+
+  certificate_arn = aws_acm_certificate_validation.validation.certificate_arn
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.emqx-wss.arn
+    target_group_arn = var.wss_target_group_arn
   }
-}
-
-resource "aws_lb_listener" "grafana" {
-  load_balancer_arn = aws_lb.nlb.arn
-  port              = "3000"
-  protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.grafana.arn
-  }
-}
-
-resource "aws_lb_listener" "prometheus" {
-  load_balancer_arn = aws_lb.nlb.arn
-  port              = "9090"
-  protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.prometheus.arn
-  }
-}
-
-resource "aws_lb_target_group" "emqx-dashboard" {
-  name                              = "${var.prefix}-emqx"
-  port                              = 18083
-  protocol                          = "TCP"
-  target_type                       = "instance"
-  vpc_id                            = var.vpc_id
-  load_balancing_cross_zone_enabled = true
-  connection_termination            = true
-  deregistration_delay              = 0
-}
-
-resource "aws_lb_target_group" "emqx-mqtt" {
-  name                              = "${var.prefix}-emqx-mqtt"
-  port                              = 1883
-  protocol                          = "TCP"
-  target_type                       = "instance"
-  vpc_id                            = var.vpc_id
-  load_balancing_cross_zone_enabled = true
-  connection_termination            = true
-  deregistration_delay              = 0
-}
-
-resource "aws_lb_target_group" "emqx-mqtts" {
-  name                              = "${var.prefix}-emqx-mqtts"
-  port                              = 8883
-  protocol                          = "TCP"
-  target_type                       = "instance"
-  vpc_id                            = var.vpc_id
-  load_balancing_cross_zone_enabled = true
-  connection_termination            = true
-  deregistration_delay              = 0
-}
-
-resource "aws_lb_target_group" "emqx-ws" {
-  name                              = "${var.prefix}-emqx-ws"
-  port                              = 8083
-  protocol                          = "TCP"
-  target_type                       = "instance"
-  vpc_id                            = var.vpc_id
-  load_balancing_cross_zone_enabled = true
-  connection_termination            = true
-  deregistration_delay              = 0
-}
-
-resource "aws_lb_target_group" "emqx-wss" {
-  name                              = "${var.prefix}-emqx-wss"
-  port                              = 8084
-  protocol                          = "TCP"
-  target_type                       = "instance"
-  vpc_id                            = var.vpc_id
-  load_balancing_cross_zone_enabled = true
-  connection_termination            = true
-  deregistration_delay              = 0
-}
-
-resource "aws_lb_target_group" "grafana" {
-  name                              = "${var.prefix}-grafana"
-  port                              = 3000
-  protocol                          = "TCP"
-  target_type                       = "instance"
-  vpc_id                            = var.vpc_id
-  load_balancing_cross_zone_enabled = true
-  connection_termination            = true
-  deregistration_delay              = 0
-}
-
-resource "aws_lb_target_group" "prometheus" {
-  name                              = "${var.prefix}-prometheus"
-  port                              = 9090
-  protocol                          = "TCP"
-  target_type                       = "instance"
-  vpc_id                            = var.vpc_id
-  load_balancing_cross_zone_enabled = true
-  connection_termination            = true
-  deregistration_delay              = 0
 }
 
 resource "aws_security_group" "nlb_sg" {
   name_prefix = var.prefix
-  description = "Access to EMQX Dashboard, Grafana and Prometheus"
+  description = "Access to EMQX Dashboard, MQTT and WSS ports"
   vpc_id      = var.vpc_id
 
   dynamic "ingress" {
-    for_each = [18083, 1883, 8883, 8083, 8084, 3000, 9090]
+    for_each = [443, 8883, 8084]
     content {
       from_port        = ingress.value
       to_port          = ingress.value
@@ -182,5 +70,48 @@ resource "aws_security_group" "nlb_sg" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_acm_certificate" "certificate" {
+  domain_name       = var.domain_name
+  validation_method = "DNS"
+
+  tags = {
+    Name = var.prefix
+  }
+}
+
+resource "aws_route53_record" "validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.certificate.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
+
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  ttl             = 60
+  type            = each.value.type
+  zone_id         = var.route53_zone_id
+}
+
+resource "aws_acm_certificate_validation" "validation" {
+  certificate_arn         = aws_acm_certificate.certificate.arn
+  validation_record_fqdns = [for r in aws_route53_record.validation : r.fqdn]
+}
+
+resource "aws_route53_record" "nlb" {
+  zone_id = var.route53_zone_id
+  name    = var.domain_name
+  type    = "A"
+
+  alias {
+    name                   = aws_lb.nlb.dns_name
+    zone_id                = aws_lb.nlb.zone_id
+    evaluate_target_health = false
   }
 }

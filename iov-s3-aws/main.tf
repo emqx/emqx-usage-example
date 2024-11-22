@@ -19,9 +19,43 @@ provider "aws" {
 
 locals {
   route53_zone_name = replace("${var.prefix}.emqx.io", "/", "-")
+  public_lb_domain_name = "${var.prefix}.${var.public_domain_name}"
   static_seeds = [
     for i in range(0, 2) : "emqx@emqx-core-${i}.${local.route53_zone_name}"
   ]
+  emqx_public_target_groups = {
+    dashboard = {
+      name = "${var.prefix}-public-dashboard"
+      port = 18083
+    }
+    mqtts = {
+      name = "${var.prefix}-public-mqtts"
+      port = 8883
+    }
+    wss = {
+      name = "${var.prefix}-public-wss"
+      port = 8084
+    }
+  }
+
+  emqx_private_target_groups = {
+    mqtt = {
+      name = "${var.prefix}-private-mqtt"
+      port = 1883
+    }
+    mqtts = {
+      name = "${var.prefix}-private-mqtts"
+      port = 8883
+    }
+    api = {
+      name = "${var.prefix}-private-api"
+      port = 18083
+    }
+  }
+}
+
+data "aws_route53_zone" "public" {
+  name = var.public_domain_name
 }
 
 module "vpc" {
@@ -31,11 +65,59 @@ module "vpc" {
   vpc_region = var.region
 }
 
+resource "aws_lb_target_group" "emqx_public" {
+  for_each = local.emqx_public_target_groups
+
+  name                              = each.value.name
+  port                              = each.value.port
+  protocol                          = "TCP"
+  target_type                       = "instance"
+  vpc_id                            = module.vpc.vpc_id
+  load_balancing_cross_zone_enabled = true
+  connection_termination            = true
+  deregistration_delay              = 0
+
+  health_check {
+    interval            = 30
+    port                = each.value.port
+    protocol            = "TCP"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+  }
+}
+
 module "public_nlb" {
-  source     = "./modules/public_nlb"
-  prefix     = var.prefix
-  vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.public_subnet_ids
+  source          = "./modules/public_nlb"
+  prefix          = var.prefix
+  vpc_id          = module.vpc.vpc_id
+  subnet_ids      = module.vpc.public_subnet_ids
+  route53_zone_id = data.aws_route53_zone.public.id
+  domain_name     = local.public_lb_domain_name
+
+  dashboard_target_group_arn = aws_lb_target_group.emqx_public["dashboard"].arn
+  mqtts_target_group_arn     = aws_lb_target_group.emqx_public["mqtts"].arn
+  wss_target_group_arn       = aws_lb_target_group.emqx_public["wss"].arn
+}
+
+resource "aws_lb_target_group" "emqx_private" {
+  for_each = local.emqx_private_target_groups
+
+  name                              = each.value.name
+  port                              = each.value.port
+  protocol                          = "TCP"
+  target_type                       = "instance"
+  vpc_id                            = module.vpc.vpc_id
+  load_balancing_cross_zone_enabled = true
+  connection_termination            = true
+  deregistration_delay              = 0
+
+  health_check {
+    interval            = 30
+    port                = each.value.port
+    protocol            = "TCP"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+  }
 }
 
 module "internal_nlb" {
@@ -43,6 +125,10 @@ module "internal_nlb" {
   prefix     = var.prefix
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnet_ids
+
+  mqtt_target_group_arn  = aws_lb_target_group.emqx_private["mqtt"].arn
+  mqtts_target_group_arn = aws_lb_target_group.emqx_private["mqtts"].arn
+  api_target_group_arn   = aws_lb_target_group.emqx_private["api"].arn
 }
 
 module "certs" {
@@ -65,19 +151,14 @@ resource "aws_route53_zone" "vpc" {
   }
 }
 
-resource "aws_security_group_rule" "allow_access_from_public_nlb" {
+resource "aws_security_group_rule" "allow_traffic_from_nlb" {
+  for_each = {
+    allow_traffic_from_public_nlb = {source_security_group_id = module.public_nlb.security_group_id},
+    allow_traffic_from_internal_nlb = {source_security_group_id = module.internal_nlb.security_group_id},
+  }
   type                     = "ingress"
   security_group_id        = module.vpc.security_group_id
-  source_security_group_id = module.public_nlb.security_group_id
-  protocol                 = "-1"
-  from_port                = 0
-  to_port                  = 0
-}
-
-resource "aws_security_group_rule" "allow_access_from_internal_nlb" {
-  type                     = "ingress"
-  security_group_id        = module.vpc.security_group_id
-  source_security_group_id = module.internal_nlb.security_group_id
+  source_security_group_id = each.value.source_security_group_id
   protocol                 = "-1"
   from_port                = 0
   to_port                  = 0
@@ -100,16 +181,10 @@ module "emqx_core_asg" {
   security_group_id    = module.vpc.security_group_id
   iam_instance_profile = module.vpc.aws_iam_instance_profile
 
-  lb_target_group_arns = [
-    module.public_nlb.emqx_dashboard_target_group_arn,
-    module.public_nlb.emqx_mqtt_target_group_arn,
-    module.public_nlb.emqx_mqtts_target_group_arn,
-    module.public_nlb.emqx_ws_target_group_arn,
-    module.public_nlb.emqx_wss_target_group_arn,
-    module.internal_nlb.mqtt_target_group_arn,
-    module.internal_nlb.mqtts_target_group_arn,
-    module.internal_nlb.httpapi_target_group_arn
-  ]
+  lb_target_group_arns = concat(
+    [for tg in aws_lb_target_group.emqx_public : tg.arn],
+    [for tg in aws_lb_target_group.emqx_private : tg.arn],
+  )
 
   min_size         = 1
   max_size         = 1
@@ -117,17 +192,13 @@ module "emqx_core_asg" {
 
   extra_user_data = <<-EOF
     curl -s https://packagecloud.io/install/repositories/emqx/emqx-enterprise5/script.deb.sh | bash
-    apt-get install emqx-enterprise
+    apt-get install -y emqx-enterprise
     systemctl stop emqx
     echo "node.name = \"emqx@$(hostname -f)\"" >> /etc/emqx/emqx.conf
     echo "cluster.discovery_strategy = static" >> /etc/emqx/emqx.conf
     echo "cluster.static.seeds = [\"${local.static_seeds[0]}\", \"${local.static_seeds[1]}\"]" >> /etc/emqx/emqx.conf
     echo "dashboard.default_password = admin" >> /etc/emqx/emqx.conf
-    systemctl enable --now emqx
+    systemctl start emqx
+    systemctl enable emqx
   EOF
-
-  depends_on = [
-    module.public_nlb,
-    module.internal_nlb,
-  ]
 }

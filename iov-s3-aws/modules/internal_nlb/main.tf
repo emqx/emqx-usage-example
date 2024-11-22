@@ -12,7 +12,7 @@ resource "aws_lb_listener" "mqtt" {
   port              = 1883
   protocol          = "TCP"
   default_action {
-    target_group_arn = aws_lb_target_group.mqtt.arn
+    target_group_arn = var.mqtt_target_group_arn
     type             = "forward"
   }
 }
@@ -22,72 +22,18 @@ resource "aws_lb_listener" "mqtts" {
   port              = 8883
   protocol          = "TCP"
   default_action {
-    target_group_arn = aws_lb_target_group.mqtts.arn
+    target_group_arn = var.mqtts_target_group_arn
     type             = "forward"
   }
 }
 
-resource "aws_lb_listener" "httpapi" {
+resource "aws_lb_listener" "api" {
   load_balancer_arn = aws_lb.nlb.arn
   port              = 18083
   protocol          = "TCP"
   default_action {
-    target_group_arn = aws_lb_target_group.httpapi.arn
+    target_group_arn = var.api_target_group_arn
     type             = "forward"
-  }
-}
-
-resource "aws_lb_target_group" "mqtt" {
-  name                              = "${var.prefix}-mqtt"
-  port                              = 1883
-  protocol                          = "TCP"
-  vpc_id                            = var.vpc_id
-  target_type                       = "instance"
-  load_balancing_cross_zone_enabled = true
-  connection_termination            = true
-  deregistration_delay              = 0
-  health_check {
-    interval            = 30
-    port                = 1883
-    protocol            = "TCP"
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
-  }
-}
-
-resource "aws_lb_target_group" "mqtts" {
-  name                              = "${var.prefix}-mqtts"
-  port                              = 8883
-  protocol                          = "TCP"
-  vpc_id                            = var.vpc_id
-  target_type                       = "instance"
-  load_balancing_cross_zone_enabled = true
-  connection_termination            = true
-  deregistration_delay              = 0
-  health_check {
-    interval            = 30
-    port                = 8883
-    protocol            = "TCP"
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
-  }
-}
-
-resource "aws_lb_target_group" "httpapi" {
-  name                              = "${var.prefix}-httpapi"
-  port                              = 18083
-  protocol                          = "TCP"
-  vpc_id                            = var.vpc_id
-  target_type                       = "instance"
-  load_balancing_cross_zone_enabled = true
-  connection_termination            = true
-  deregistration_delay              = 0
-  health_check {
-    interval            = 30
-    port                = 18083
-    protocol            = "TCP"
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
   }
 }
 

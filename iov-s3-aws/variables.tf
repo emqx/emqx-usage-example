@@ -23,22 +23,6 @@ variable "ami_owner" {
   default = "amazon"
 }
 
-variable "node_exporter_enabled_collectors" {
-  type    = list(string)
-  default = ["buddyinfo", "cpu", "diskstats", "ethtool", "filefd", "filesystem", "loadavg", "meminfo", "netdev", "netstat", "processes", "sockstat", "stat", "systemd", "tcpstat", "time", "uname", "vmstat"]
-}
-
-variable "deb_architecture_map" {
-  type = map(any)
-  default = {
-    "armv6l" : "armhf",
-    "armv7l" : "armhf",
-    "aarch64" : "arm64",
-    "x86_64" : "amd64",
-    "i386" : "i386"
-  }
-}
-
 variable "emqx_license_file" {
   type    = string
   default = "emqx.lic"
@@ -52,4 +36,9 @@ variable "emqx_core_count" {
 variable "emqx_replicant_count" {
   type    = number
   default = 0
+}
+
+variable "public_domain_name" {
+  type    = string
+  default = "emqx.works"
 }
