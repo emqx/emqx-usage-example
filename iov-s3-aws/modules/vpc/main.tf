@@ -216,3 +216,10 @@ resource "aws_vpc_endpoint" "kms" {
   security_group_ids  = [aws_security_group.vpc_sg.id]
   subnet_ids          = aws_subnet.private[*].id
 }
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id = aws_vpc.vpc.id
+  service_name = "com.amazonaws.${var.vpc_region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids = [aws_vpc.vpc.main_route_table_id]
+}

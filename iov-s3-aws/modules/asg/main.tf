@@ -34,7 +34,7 @@ resource "aws_autoscaling_group" "asg" {
 }
 
 resource "aws_autoscaling_attachment" "asg" {
-  count                  = length(var.lb_target_group_arns)
+  count = length(var.lb_target_group_arns)
   autoscaling_group_name = aws_autoscaling_group.asg.name
   lb_target_group_arn    = var.lb_target_group_arns[count.index]
 }

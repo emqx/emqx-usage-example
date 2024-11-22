@@ -42,3 +42,8 @@ variable "public_domain_name" {
   type    = string
   default = "emqx.works"
 }
+
+variable "s3_bucket" {
+  type    = string
+  default = "emqx-iov-s3-demo"
+}

@@ -18,7 +18,7 @@ provider "aws" {
 }
 
 locals {
-  route53_zone_name = replace("${var.prefix}.emqx.io", "/", "-")
+  route53_zone_name     = replace("${var.prefix}.emqx.io", "/", "-")
   public_lb_domain_name = "${var.prefix}.${var.public_domain_name}"
   static_seeds = [
     for i in range(0, 2) : "emqx@emqx-core-${i}.${local.route53_zone_name}"
@@ -153,8 +153,8 @@ resource "aws_route53_zone" "vpc" {
 
 resource "aws_security_group_rule" "allow_traffic_from_nlb" {
   for_each = {
-    allow_traffic_from_public_nlb = {source_security_group_id = module.public_nlb.security_group_id},
-    allow_traffic_from_internal_nlb = {source_security_group_id = module.internal_nlb.security_group_id},
+    allow_traffic_from_public_nlb   = { source_security_group_id = module.public_nlb.security_group_id },
+    allow_traffic_from_internal_nlb = { source_security_group_id = module.internal_nlb.security_group_id },
   }
   type                     = "ingress"
   security_group_id        = module.vpc.security_group_id
@@ -195,10 +195,40 @@ module "emqx_core_asg" {
     apt-get install -y emqx-enterprise
     systemctl stop emqx
     echo "node.name = \"emqx@$(hostname -f)\"" >> /etc/emqx/emqx.conf
-    echo "cluster.discovery_strategy = static" >> /etc/emqx/emqx.conf
-    echo "cluster.static.seeds = [\"${local.static_seeds[0]}\", \"${local.static_seeds[1]}\"]" >> /etc/emqx/emqx.conf
-    echo "dashboard.default_password = admin" >> /etc/emqx/emqx.conf
+    echo "include \"/etc/emqx/extra.conf\"" >> /etc/emqx/emqx.conf
+    aws s3 cp s3://${var.s3_bucket}/emqx/extra.conf /etc/emqx/extra.conf
     systemctl start emqx
     systemctl enable emqx
   EOF
+
+  depends_on = [
+    aws_s3_object.extra_conf,
+  ]
+}
+
+resource "aws_s3_bucket" "emqx" {
+  bucket = var.s3_bucket
+}
+
+resource "aws_s3_object" "extra_conf" {
+  bucket = aws_s3_bucket.emqx.bucket
+  key    = "emqx/extra.conf"
+  content = templatefile("${path.module}/extra.conf.tpl", {
+    s3_bucket = aws_s3_bucket.emqx.bucket,
+    region    = var.region,
+    seeds     = join(",", [for item in local.static_seeds : "\"${item}\""]),
+  })
+}
+
+resource "aws_s3_bucket_ownership_controls" "emqx" {
+  bucket = aws_s3_bucket.emqx.bucket
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+resource "aws_s3_bucket_acl" "emqx" {
+  depends_on = [aws_s3_bucket_ownership_controls.emqx]
+  bucket     = aws_s3_bucket.emqx.bucket
+  acl        = "private"
 }
