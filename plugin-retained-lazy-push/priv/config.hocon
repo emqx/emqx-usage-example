@@ -1,0 +1,10 @@
+{
+    topics = ["rpush/#"]
+    peer {
+        host = "localhost"
+        port = 1883
+        username = "user1"
+        password = "pass1"
+        clientid_prefix = "rpush-"
+    }
+}

@@ -1,0 +1,11 @@
+{application, emqx_rpush, [
+    {description, "Retained message lazy push"},
+    {vsn, "0.1.0"},
+    {modules, []},
+    {registered, [emqx_rpush_sup]},
+    {applications, [kernel, stdlib]},
+    {mod, {emqx_rpush_app, []}},
+    {env, []},
+    {licenses, ["Apache-2.0"]},
+    {maintainers, ["zmstone <zmstone@gmail.com>"]}
+]}.
