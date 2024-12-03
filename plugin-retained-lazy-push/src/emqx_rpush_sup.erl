@@ -15,7 +15,8 @@ init([]) ->
             id => emqx_rpush_client,
             start => {emqx_rpush_client, start_link, []},
             type => worker,
-            restart => transient
+            restart => transient,
+            shutdown => 5000
         }
     ],
     {ok, {#{strategy => one_for_one}, Children}}.

@@ -9,18 +9,19 @@
 -include_lib("emqx/include/logger.hrl").
 
 -export([
-    load/1,
+    load/0,
     unload/0
 ]).
 
 %% Message Pubsub Hooks
--export([on_message_publish/2]).
+-export([on_message_publish/1]).
 
 %% Called when the plugin application start
-load(Env) ->
-    hook('message.publish', {?MODULE, on_message_publish, [Env]}).
+load() ->
+    ok = emqx_rpush_config:load(),
+    hook('message.publish', {?MODULE, on_message_publish, []}).
 
-on_message_publish(Message, _Env) ->
+on_message_publish(Message) ->
     ok = forward_to_peer_broker(emqx_message:to_map(Message)),
     {ok, Message}.
 
@@ -34,6 +35,7 @@ forward_to_peer_broker(#{topic := Topic} = Message) ->
 
 %% Called when the plugin application stop
 unload() ->
+    emqx_rpush_config:unload(),
     unhook('message.publish', {?MODULE, on_message_publish}).
 
 hook(HookPoint, MFA) ->

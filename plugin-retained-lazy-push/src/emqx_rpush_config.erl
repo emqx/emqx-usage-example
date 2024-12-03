@@ -1,6 +1,6 @@
 -module(emqx_rpush_config).
 
--export([load/0, unload/0, get_topics/0, mqtt_client_opts/0]).
+-export([load/0, unload/0, get_topics/0, mqtt_client_opts/0, forward_ns/0]).
 
 get_topics() ->
     #{<<"topics">> := Topics} = get_config(),
@@ -22,6 +22,10 @@ mqtt_client_opts() ->
         username => Username,
         password => Password
     }.
+
+forward_ns() ->
+    #{<<"peer">> := #{<<"forward_ns">> := Ns}} = get_config(),
+    Ns.
 
 clientid(Prefix) ->
     iolist_to_binary([Prefix, atom_to_list(node())]).

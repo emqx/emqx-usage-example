@@ -6,5 +6,5 @@
         username = "user1"
         password = "pass1"
         clientid_prefix = "rpush-"
-    }
-}
+        forward_ns = "fwd/"
+    }}
