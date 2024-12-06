@@ -117,7 +117,7 @@ module "internal_nlb" {
 module "certs" {
   source = "./modules/certs"
   subject = {
-    cn        = "EMQX"
+    cn        = module.public_nlb.dns_name
     client_cn = "v2-demo123"
     o         = "EMQ Technologies"
     c         = "SE"
@@ -130,6 +130,7 @@ resource "aws_route53_zone" "vpc" {
     vpc_id     = module.vpc.vpc_id
     vpc_region = var.region
   }
+  force_destroy = true
   tags = {
     Name = var.prefix
   }
