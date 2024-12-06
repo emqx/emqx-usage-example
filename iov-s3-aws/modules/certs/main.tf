@@ -88,7 +88,7 @@ resource "tls_cert_request" "client_csr" {
   private_key_pem = tls_private_key.client_key.private_key_pem
 
   subject {
-    common_name  = var.subject.cn
+    common_name  = var.subject.client_cn
     organization = var.subject.o
     country      = var.subject.c
   }

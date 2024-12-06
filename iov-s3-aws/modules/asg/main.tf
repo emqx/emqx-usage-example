@@ -24,19 +24,13 @@ resource "aws_autoscaling_group" "asg" {
   desired_capacity    = var.desired_capacity
   max_size            = var.max_size
   min_size            = var.min_size
-  target_group_arns   = [] # Will be attached separately
+  target_group_arns   = var.lb_target_group_arns
   vpc_zone_identifier = var.subnet_ids
 
   launch_template {
     id      = aws_launch_template.lt.id
     version = "$Latest"
   }
-}
-
-resource "aws_autoscaling_attachment" "asg" {
-  count = length(var.lb_target_group_arns)
-  autoscaling_group_name = aws_autoscaling_group.asg.name
-  lb_target_group_arn    = var.lb_target_group_arns[count.index]
 }
 
 data "aws_ami" "selected" {

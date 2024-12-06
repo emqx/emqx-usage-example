@@ -9,6 +9,49 @@ dashboard {
   default_password = admin
 }
 
+listeners {
+  ssl {
+    default {
+      enable = true
+      ssl_options {
+        verify = verify_peer
+        fail_if_no_peer_cert = true
+      }
+    }
+  }
+  tcp {
+    default {
+      enable = false
+    }
+  }
+  ws {
+    default {
+      enable = false
+    }
+  }
+  wss {
+    default {
+      enable = false
+    }
+  }
+}
+
+authentication = [
+  {
+    mechanism = password_based
+    backend = http
+    url = "http://${auth_server}:8000"
+    method = post
+    headers {content-type = "application/json"}
+    body {
+      vin = "$${cert_common_name}"
+      # username and password are not used in this demo
+      username = "$${username}"
+      password = "$${password}"
+    }
+  }
+]
+
 connectors {
   s3 {
     s3up1 {

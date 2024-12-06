@@ -10,22 +10,10 @@ variable "subnet_ids" {
   type = list(string)
 }
 
-variable "route53_zone_id" {
-  type = string
-}
-
-variable "domain_name" {
-  type = string
-}
-
 variable "dashboard_target_group_arn" {
   type = string
 }
 
 variable "mqtts_target_group_arn" {
-  type = string
-}
-
-variable "wss_target_group_arn" {
   type = string
 }

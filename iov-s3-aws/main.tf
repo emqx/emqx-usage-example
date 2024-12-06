@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "5.56.1"
+      version = "5.79.0"
     }
   }
 }
@@ -18,8 +18,7 @@ provider "aws" {
 }
 
 locals {
-  route53_zone_name     = replace("${var.prefix}.emqx.io", "/", "-")
-  public_lb_domain_name = "${var.prefix}.${var.public_domain_name}"
+  route53_zone_name = replace("${var.prefix}.emqx.io", "/", "-")
   static_seeds = [
     for i in range(0, 2) : "emqx@emqx-core-${i}.${local.route53_zone_name}"
   ]
@@ -32,17 +31,9 @@ locals {
       name = "${var.prefix}-public-mqtts"
       port = 8883
     }
-    wss = {
-      name = "${var.prefix}-public-wss"
-      port = 8084
-    }
   }
 
   emqx_private_target_groups = {
-    mqtt = {
-      name = "${var.prefix}-private-mqtt"
-      port = 1883
-    }
     mqtts = {
       name = "${var.prefix}-private-mqtts"
       port = 8883
@@ -52,10 +43,6 @@ locals {
       port = 18083
     }
   }
-}
-
-data "aws_route53_zone" "public" {
-  name = var.public_domain_name
 }
 
 module "vpc" {
@@ -87,16 +74,13 @@ resource "aws_lb_target_group" "emqx_public" {
 }
 
 module "public_nlb" {
-  source          = "./modules/public_nlb"
-  prefix          = var.prefix
-  vpc_id          = module.vpc.vpc_id
-  subnet_ids      = module.vpc.public_subnet_ids
-  route53_zone_id = data.aws_route53_zone.public.id
-  domain_name     = local.public_lb_domain_name
+  source     = "./modules/public_nlb"
+  prefix     = var.prefix
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.public_subnet_ids
 
   dashboard_target_group_arn = aws_lb_target_group.emqx_public["dashboard"].arn
   mqtts_target_group_arn     = aws_lb_target_group.emqx_public["mqtts"].arn
-  wss_target_group_arn       = aws_lb_target_group.emqx_public["wss"].arn
 }
 
 resource "aws_lb_target_group" "emqx_private" {
@@ -126,7 +110,6 @@ module "internal_nlb" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnet_ids
 
-  mqtt_target_group_arn  = aws_lb_target_group.emqx_private["mqtt"].arn
   mqtts_target_group_arn = aws_lb_target_group.emqx_private["mqtts"].arn
   api_target_group_arn   = aws_lb_target_group.emqx_private["api"].arn
 }
@@ -134,9 +117,10 @@ module "internal_nlb" {
 module "certs" {
   source = "./modules/certs"
   subject = {
-    cn = "EMQX"
-    o  = "EMQ Technologies"
-    c  = "SE"
+    cn        = "EMQX"
+    client_cn = "v2-demo123"
+    o         = "EMQ Technologies"
+    c         = "SE"
   }
 }
 
@@ -194,15 +178,46 @@ module "emqx_core_asg" {
     curl -s https://packagecloud.io/install/repositories/emqx/emqx-enterprise5/script.deb.sh | bash
     apt-get install -y emqx-enterprise
     systemctl stop emqx
+    echo '{deny, all}.' > /etc/emqx/acl.conf
     echo "node.name = \"emqx@$(hostname -f)\"" >> /etc/emqx/emqx.conf
     echo "include \"/etc/emqx/extra.conf\"" >> /etc/emqx/emqx.conf
     aws s3 cp s3://${var.s3_bucket}/emqx/extra.conf /etc/emqx/extra.conf
+    cp /etc/ssl/certs/emqx/*.pem /etc/emqx/certs/
     systemctl start emqx
     systemctl enable emqx
   EOF
 
   depends_on = [
     aws_s3_object.extra_conf,
+  ]
+}
+
+module "auth-server" {
+  source               = "./modules/ec2"
+  prefix               = var.prefix
+  vpc_id               = module.vpc.vpc_id
+  region               = var.region
+  ami_filter           = var.ami_filter
+  ami_owner            = var.ami_owner
+  instance_type        = "t3.micro"
+  instance_name        = "auth-server"
+  iam_instance_profile = module.vpc.aws_iam_instance_profile
+  route53_zone_id      = aws_route53_zone.vpc.zone_id
+  hostname             = "auth.${local.route53_zone_name}"
+  subnet_id            = module.vpc.private_subnet_ids[0]
+  security_group_id    = module.vpc.security_group_id
+  certs                = module.certs.certs
+  extra_user_data      = <<-EOF
+    aws s3 sync s3://${var.s3_bucket}/auth-server /opt/auth-server
+    python3 -m pip install -r /opt/auth-server/requirements.txt
+    cp /opt/auth-server/auth-server.service /etc/systemd/system/
+    systemctl daemon-reload
+    systemctl start auth-server.service
+    systemctl enable auth-server.service
+  EOF
+  depends_on = [
+    aws_s3_object.auth-server,
+    aws_s3_object.auth-server-service,
   ]
 }
 
@@ -213,11 +228,29 @@ resource "aws_s3_bucket" "emqx" {
 resource "aws_s3_object" "extra_conf" {
   bucket = aws_s3_bucket.emqx.bucket
   key    = "emqx/extra.conf"
+
   content = templatefile("${path.module}/extra.conf.tpl", {
-    s3_bucket = aws_s3_bucket.emqx.bucket,
-    region    = var.region,
-    seeds     = join(",", [for item in local.static_seeds : "\"${item}\""]),
+    s3_bucket   = aws_s3_bucket.emqx.bucket,
+    region      = var.region,
+    seeds       = join(",", [for item in local.static_seeds : "\"${item}\""]),
+    auth_server = "auth.${local.route53_zone_name}",
   })
+  etag = filemd5("${path.module}/extra.conf.tpl")
+}
+
+resource "aws_s3_object" "auth-server" {
+  for_each = fileset("${path.module}/../iov-s3/auth-server", "*")
+  bucket   = aws_s3_bucket.emqx.bucket
+  key      = "auth-server/${each.value}"
+  source   = "${path.module}/../iov-s3/auth-server/${each.value}"
+  etag     = filemd5("${path.module}/../iov-s3/auth-server/${each.value}")
+}
+
+resource "aws_s3_object" "auth-server-service" {
+  bucket = aws_s3_bucket.emqx.bucket
+  key    = "auth-server/auth-server.service"
+  source = "${path.module}/auth-server.service"
+  etag   = filemd5("${path.module}/auth-server.service")
 }
 
 resource "aws_s3_bucket_ownership_controls" "emqx" {

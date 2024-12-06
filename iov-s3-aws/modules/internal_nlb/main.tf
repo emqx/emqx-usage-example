@@ -7,16 +7,6 @@ resource "aws_lb" "nlb" {
   enable_cross_zone_load_balancing = true
 }
 
-resource "aws_lb_listener" "mqtt" {
-  load_balancer_arn = aws_lb.nlb.arn
-  port              = 1883
-  protocol          = "TCP"
-  default_action {
-    target_group_arn = var.mqtt_target_group_arn
-    type             = "forward"
-  }
-}
-
 resource "aws_lb_listener" "mqtts" {
   load_balancer_arn = aws_lb.nlb.arn
   port              = 8883
@@ -43,7 +33,7 @@ resource "aws_security_group" "nlb_sg" {
   vpc_id      = var.vpc_id
 
   dynamic "ingress" {
-    for_each = [1883, 8883, 18083]
+    for_each = [8883, 18083]
     content {
       from_port        = ingress.value
       to_port          = ingress.value
