@@ -90,6 +90,7 @@ resource "aws_iam_policy" "ec2_policy" {
           "route53:GetHostedZone",
           "s3:GetObject",
           "s3:List*",
+          "s3:PutObject",
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
