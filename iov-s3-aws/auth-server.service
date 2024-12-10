@@ -1,0 +1,13 @@
+[Unit]
+Description=Authentication server
+After=network.target
+
+[Service]
+User=auth-server
+Group=auth-server
+Restart=on-failure
+WorkingDirectory=/opt/auth-server
+ExecStart=/usr/local/bin/gunicorn -w 4 'server:app'
+
+[Install]
+WantedBy=default.target

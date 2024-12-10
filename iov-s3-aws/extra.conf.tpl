@@ -9,13 +9,21 @@ dashboard {
   default_password = admin
 }
 
+mqtt {
+  idle_timeout = infinity
+}
+
 listeners {
   ssl {
     default {
       enable = true
+      enable_authn = true
       ssl_options {
         verify = verify_peer
         fail_if_no_peer_cert = true
+      }
+      tcp_options {
+        keepalive = "360,30,10"
       }
     }
   }
@@ -40,7 +48,9 @@ authentication = [
   {
     mechanism = password_based
     backend = http
-    url = "http://${auth_server}:8000"
+    pool_size = 128
+    request_timeout = 15s
+    url = "http://${auth_server}"
     method = post
     headers {content-type = "application/json"}
     body {
@@ -80,7 +90,7 @@ actions {
       parameters {
         acl = private
         aggregation {
-          max_records = 10
+          max_records = 10000
           time_interval = "30s"
         }
         bucket = "${s3_bucket}"
@@ -92,8 +102,8 @@ actions {
         mode = aggregated
       }
       resource_opts {
-        batch_size = 100
-        batch_time = "10ms"
+        batch_size = 1000
+        batch_time = "10s"
         health_check_interval = "15s"
         inflight_window = 100
         max_buffer_bytes = "256MB"

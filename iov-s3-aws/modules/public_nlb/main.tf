@@ -23,7 +23,7 @@ resource "aws_lb_listener" "mqtts" {
   load_balancer_arn        = aws_lb.nlb.arn
   port                     = "8883"
   protocol                 = "TCP"
-  tcp_idle_timeout_seconds = 60
+  tcp_idle_timeout_seconds = 3600
 
   default_action {
     type             = "forward"

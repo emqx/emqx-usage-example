@@ -1,6 +1,6 @@
 # EMQX Enterprise For Internet of Vehicles
 
-Collection of scripts to setup EMQX Enterprise 5.8.2 for IoV (Internet of Vehicles) demo environment in AWS.
+Collection of scripts to setup EMQX Enterprise 5.8.3 for IoV (Internet of Vehicles) demo environment in AWS.
 
 Demoed features:
 
@@ -39,5 +39,11 @@ mqttx pub -h iov-s3-demo-public-lb-<generated_lb_id>.elb.eu-central-1.amazonaws.
 ```
 
 Messages are saved in `s3://emqx-iov-s3-demo/up1` by default.
+
+To get a shell on instances, use [AWS SSM](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html).
+
+```
+aws --region eu-central-1 ssm start-session --target i-00deadbeef112233
+```
 
 ![Architecture](./architecture.png)

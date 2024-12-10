@@ -35,12 +35,22 @@ case $(uname -m) in
 esac
 install ./mqttx-cli-linux /usr/local/bin/mqttx
 
-cat > /etc/sysctl.d/emqx.conf <<EOF
+cat > /etc/sysctl.d/99-emqx.conf <<EOF
 fs.file-max=2097152
 fs.nr_open=2097152
+net.ipv4.ip_local_port_range=1025 65535
+net.core.somaxconn=32768
+net.ipv4.tcp_max_syn_backlog=16384
+net.core.netdev_max_backlog=16384
+net.core.rmem_default=262144
+net.core.wmem_default=262144
+net.core.rmem_max=16777216
+net.core.wmem_max=16777216
+net.core.optmem_max=16777216
+net.ipv4.tcp_fin_timeout=15
 EOF
 
-sysctl --load=/etc/sysctl.d/emqx.conf
+sysctl --load=/etc/sysctl.d/99-emqx.conf
 
 cat >> /etc/security/limits.conf << EOF
 *      soft   nofile      2097152
@@ -50,6 +60,8 @@ EOF
 echo 'DefaultLimitNOFILE=2097152' >> /etc/systemd/system.conf
 
 ulimit -n 2097152
+
+swapoff -a
 
 mkdir -p /etc/ssl/certs/emqx
 echo "${certs.ca}" > /etc/ssl/certs/emqx/cacert.pem

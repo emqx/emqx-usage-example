@@ -155,9 +155,9 @@ module "emqx_core_asg" {
   name              = "${var.prefix}-emqx-core${count.index}"
   register_hostname = true
   hostname          = "emqx-core-${count.index}.${local.route53_zone_name}"
-  instance_type     = "t3.large"
-  ami_filter        = var.ami_filter
-  ami_owner         = var.ami_owner
+  instance_type     = "c8g.xlarge"
+  ami_filter        = "*ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-arm64-server-*"
+  ami_owner         = "amazon"
   route53_zone_id   = aws_route53_zone.vpc.zone_id
   certs             = module.certs.certs
 
@@ -200,7 +200,7 @@ module "auth-server" {
   region               = var.region
   ami_filter           = var.ami_filter
   ami_owner            = var.ami_owner
-  instance_type        = "t3.micro"
+  instance_type        = "c7i.large"
   instance_name        = "auth-server"
   iam_instance_profile = module.vpc.aws_iam_instance_profile
   route53_zone_id      = aws_route53_zone.vpc.zone_id
@@ -211,14 +211,55 @@ module "auth-server" {
   extra_user_data      = <<-EOF
     aws s3 sync s3://${var.s3_bucket}/auth-server /opt/auth-server
     python3 -m pip install -r /opt/auth-server/requirements.txt
+    python3 -m pip install gunicorn
     cp /opt/auth-server/auth-server.service /etc/systemd/system/
+    # create user for auth-server
+    useradd -r auth-server
     systemctl daemon-reload
     systemctl start auth-server.service
     systemctl enable auth-server.service
+    apt-get update && apt-get install -y nginx
+    rm /etc/nginx/sites-enabled/default
+    cp /opt/auth-server/nginx.conf /etc/nginx/conf.d/auth-server.conf
+    systemctl restart nginx
+    systemctl enable nginx
   EOF
   depends_on = [
     aws_s3_object.auth-server,
     aws_s3_object.auth-server-service,
+  ]
+}
+
+module "loadgen" {
+  source               = "./modules/ec2"
+  prefix               = var.prefix
+  vpc_id               = module.vpc.vpc_id
+  region               = var.region
+  ami_filter           = var.ami_filter
+  ami_owner            = var.ami_owner
+  instance_type        = "m7i.2xlarge"
+  instance_name        = "loadgen"
+  iam_instance_profile = module.vpc.aws_iam_instance_profile
+  route53_zone_id      = aws_route53_zone.vpc.zone_id
+  hostname             = "loadgen.${local.route53_zone_name}"
+  subnet_id            = module.vpc.public_subnet_ids[0]
+  security_group_id    = module.vpc.security_group_id
+  certs                = module.certs.certs
+  extra_user_data      = <<-EOF
+    mkdir /opt/loadgen
+    cd /opt/loadgen
+    #wget https://github.com/emqx/emqttb/releases/download/v1.0.3/emqttb-1.0.3-ubuntu22.04-amd64-quic.tar.gz
+    wget https://github.com/emqx/emqtt-bench/releases/download/0.4.25/emqtt-bench-0.4.25-ubuntu22.04-amd64-quic.tar.gz
+    #tar zxf emqttb-1.0.3-ubuntu22.04-amd64-quic.tar.gz
+    tar zxf emqtt-bench-0.4.25-ubuntu22.04-amd64-quic.tar.gz
+
+    aws s3 cp s3://${var.s3_bucket}/loadgen/loadgen.service /etc/systemd/system/
+    useradd -r loadgen
+    chown -R loadgen:loadgen /opt/loadgen
+    systemctl daemon-reload
+  EOF
+  depends_on = [
+    aws_s3_object.loadgen-service,
   ]
 }
 
@@ -252,6 +293,23 @@ resource "aws_s3_object" "auth-server-service" {
   key    = "auth-server/auth-server.service"
   source = "${path.module}/auth-server.service"
   etag   = filemd5("${path.module}/auth-server.service")
+}
+
+resource "aws_s3_object" "auth-server-nginx-conf" {
+  bucket = aws_s3_bucket.emqx.bucket
+  key    = "auth-server/nginx.conf"
+  source = "${path.module}/nginx.conf"
+  etag   = filemd5("${path.module}/nginx.conf")
+}
+
+resource "aws_s3_object" "loadgen-service" {
+  bucket = aws_s3_bucket.emqx.bucket
+  key    = "loadgen/loadgen.service"
+
+  content = templatefile("${path.module}/loadgen.service.tpl", {
+    emqx_target = module.public_nlb.dns_name,
+  })
+  etag = filemd5("${path.module}/loadgen.service.tpl")
 }
 
 resource "aws_s3_bucket_ownership_controls" "emqx" {
