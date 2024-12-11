@@ -155,7 +155,7 @@ module "emqx_core_asg" {
   name              = "${var.prefix}-emqx-core${count.index}"
   register_hostname = true
   hostname          = "emqx-core-${count.index}.${local.route53_zone_name}"
-  instance_type     = "c8g.xlarge"
+  instance_type     = "c8g.large"
   ami_filter        = "*ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-arm64-server-*"
   ami_owner         = "amazon"
   route53_zone_id   = aws_route53_zone.vpc.zone_id
