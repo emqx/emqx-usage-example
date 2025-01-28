@@ -8,4 +8,6 @@ mqtt {
       set_as_attr = tns
     }
   ]
+  # Add tenant namespace as a prefix to the original client ID
+  clientid_override = """concat([client_attrs.tns,'-',clientid])"""
 }

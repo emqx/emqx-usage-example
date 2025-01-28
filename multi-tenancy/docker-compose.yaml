@@ -11,7 +11,7 @@ services:
     volumes:
       - ./auth-server/server.py:/server.py
   emqx:
-    image: emqx/emqx-enterprise:5.8.1
+    image: emqx/emqx-enterprise:5.8.4
     hostname: emqx
     container_name: emqx
     networks:
