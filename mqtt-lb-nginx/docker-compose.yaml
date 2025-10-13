@@ -1,7 +1,6 @@
-version: '3'
 services:
   emqx1:
-    image: emqx/emqx:5.4.1
+    image: emqx/emqx:5.8.8
     container_name: emqx1
     hostname: emqx1-cluster.emqx.io
     environment:
@@ -12,7 +11,7 @@ services:
       - 18083:18083
 
   emqx2:
-    image: emqx/emqx:5.4.1 
+    image: emqx/emqx:5.8.8
     container_name: emqx2
     hostname: emqx2-cluster.emqx.io
     environment:
@@ -21,7 +20,7 @@ services:
       - EMQX_CLUSTER__STATIC__SEEDS=emqx1@emqx1-cluster.emqx.io,emqx2@emqx2-cluster.emqx.io,emqx3@emqx3-cluster.emqx.io   
 
   emqx3:
-    image: emqx/emqx:5.4.1
+    image: emqx/emqx:5.8.8
     container_name: emqx3
     hostname: emqx3-cluster.emqx.io
     environment:

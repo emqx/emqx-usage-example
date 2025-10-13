@@ -32,7 +32,7 @@ $ mqttx sub --config ./mqttx_cli_emqx_tcp.json
 Create 10 clients and subscribe to topic `t/{clientid}` with MQTT.
 
 ```bash
-mqttx bench sub --config ./mqttx_cli_emqx_tcp.json
+mqttx bench sub --load-options ./mqttx_cli_emqx_tcp.json
 ```
 
 ### EMQX MQTT TLS
@@ -40,5 +40,13 @@ mqttx bench sub --config ./mqttx_cli_emqx_tcp.json
 Create 10 clients and subscribe to topic `t/{clientid}` with MQTT TLS.
 
 ```bash
-mqttx bench sub --config ./mqttx_cli_emqx_tls.json
+mqttx bench sub --load-options ./mqttx_cli_emqx_tls.json
+```
+
+### EMQX MQTT WS
+
+Create 10 clients and subscribe to topic `t/{clientid}` with MQTT WS.
+
+```bash
+mqttx bench sub --load-options ./mqttx_cli_emqx_ws.json
 ```
