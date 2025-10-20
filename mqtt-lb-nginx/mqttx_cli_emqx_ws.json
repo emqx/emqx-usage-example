@@ -1,0 +1,19 @@
+{
+  "benchSub": {
+    "count": 10,
+    "interval": 10,
+    "mqttVersion": 5,
+    "hostname": "localhost",
+    "clientId": "mqttx_7db1709a",
+    "clean": true,
+    "protocol": "ws",
+    "path": "/mqtt",
+    "reconnectPeriod": 1000,
+    "maximumReconnectTimes": 10,
+    "reqProblemInfo": true,
+    "topic": [
+      "t/%c"
+    ],
+    "port": 8083
+  }
+}
