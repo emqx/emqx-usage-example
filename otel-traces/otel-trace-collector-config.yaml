@@ -1,0 +1,22 @@
+receivers:
+  otlp:
+    protocols:
+      grpc: {}  # plaintext OTLP gRPC from EMQX
+
+exporters:
+  otlphttp:
+    endpoint: "http://jaeger:4318"  # OTLP HTTP to Jaeger
+
+processors:
+  batch: {}
+
+extensions:
+  health_check:
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp]

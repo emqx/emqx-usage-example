@@ -1,0 +1,51 @@
+opentelemetry {
+  exporter {
+    endpoint = "http://otel-collector:4317"
+    headers {}
+    ssl_options {
+      ciphers = []
+      depth = 10
+      enable = false
+      hibernate_after = "5s"
+      log_level = notice
+      middlebox_comp_mode = true
+      reuse_sessions = true
+      secure_renegotiate = true
+      verify = verify_none
+      versions = [
+        "tlsv1.3",
+        "tlsv1.2"
+      ]
+    }
+  }
+  logs {
+    enable = false
+    level = warning
+    scheduled_delay = "1s"
+  }
+  metrics {
+    enable = false
+    interval = "10s"
+  }
+  traces {
+    enable = true
+    filter {
+      e2e_tracing_options {
+        client_connect_disconnect = false
+        client_messaging = true
+        client_subscribe_unsubscribe = false
+        clientid_match_rules_max = 30
+        cluster_identifier = emqxcl
+        follow_traceparent = true
+        msg_trace_level = 0
+        sample_ratio = "100%"
+        topic_match_rules_max = 30
+        trace_rule_engine = false
+      }
+      trace_all = true
+      trace_mode = legacy
+    }
+    max_queue_size = 2048
+    scheduled_delay = "5s"
+  }
+}
