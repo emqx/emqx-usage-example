@@ -1,0 +1,32 @@
+listeners {
+  ssl {
+    default {
+      acceptors = 16
+      access_rules = [
+        "allow all"
+      ]
+      bind = "0.0.0.0:8883"
+      enable = true
+      max_conn_rate = infinity
+      max_connections = infinity
+      mountpoint = ""
+      proxy_protocol = false
+      proxy_protocol_timeout = "3s"
+      ssl_options {
+        cacertfile = "/certs/ca.pem"
+        certfile = "/certs/server-cert.pem"
+        keyfile = "/certs/server-key.pem"
+        fail_if_no_peer_cert = true
+        log_level = debug
+        session_tickets = stateless
+        verify = verify_peer
+        versions = ["tlsv1.3"]
+      }
+    }
+  }
+  tcp.default = marked_for_deletion
+  ws.default = marked_for_deletion
+  wss.default = marked_for_deletion
+}
+
+node.tls_stateless_tickets_seed = "Hey@MQTT-IamHereForU-2026-SECURE"

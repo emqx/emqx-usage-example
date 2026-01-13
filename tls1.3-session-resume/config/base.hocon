@@ -1,0 +1,3 @@
+# overrides for this demo
+# this dir is moutned to docker at /config
+include "/config/listeners.hocon"
