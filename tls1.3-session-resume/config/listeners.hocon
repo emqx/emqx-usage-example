@@ -29,4 +29,3 @@ listeners {
   wss.default = marked_for_deletion
 }
 
-node.tls_stateless_tickets_seed = "Hey@MQTT-IamHereForU-2026-SECURE"
