@@ -52,6 +52,9 @@ fi
 CLIENT_OPTS=""
 if [ -f "$CLIENT_CERT" ] && [ -f "$CLIENT_KEY" ]; then
     CLIENT_OPTS="-cert $CLIENT_CERT -key $CLIENT_KEY"
+    # Use -cert_chain to send the full certificate chain (including intermediates)
+    # This is needed when client-cert.pem contains both the client cert and intermediate CA
+    CLIENT_OPTS="$CLIENT_OPTS -cert_chain $CLIENT_CERT"
     if [ -f "$CA_CERT" ]; then
         CLIENT_OPTS="$CLIENT_OPTS -CAfile $CA_CERT"
     fi

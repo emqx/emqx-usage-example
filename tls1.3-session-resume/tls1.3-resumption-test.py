@@ -26,6 +26,8 @@ import ssl
 import os
 import tempfile
 import argparse
+import time
+import select
 from pathlib import Path
 
 
@@ -195,7 +197,7 @@ def test_tls13_resumption(host1, port1, host2, port2, cert_paths, check_hostname
     protocol1 = None
     session1 = None
     context_used = context  # Track which context was used
-    
+
     try:
         ssl_sock1 = connect_tls(host1, port1, context, timeout=10)
         tls_info1 = get_tls_info(ssl_sock1)
@@ -210,13 +212,13 @@ def test_tls13_resumption(host1, port1, host2, port2, cert_paths, check_hostname
             print(f"Warning: Certificate verification failed (self-signed cert): {e}")
             print("Retrying with relaxed certificate verification...")
             print("")
-            
+
             # Create a relaxed context
             context_relaxed = create_ssl_context(cert_paths, check_hostname)
             context_relaxed.check_hostname = False
             context_relaxed.verify_mode = ssl.CERT_NONE
             context_used = context_relaxed  # Track this context for reuse
-            
+
             try:
                 ssl_sock1 = connect_tls(host1, port1, context_relaxed, timeout=10)
                 tls_info1 = get_tls_info(ssl_sock1)
@@ -238,11 +240,11 @@ def test_tls13_resumption(host1, port1, host2, port2, cert_paths, check_hostname
             print("  3. Certificate verification failed")
             print("")
             return False
-    
+
     if not ssl_sock1 or not tls_info1:
         print(f"{RED}ERROR: Failed to establish connection{NC}")
         return False
-    
+
     # Verify TLS 1.3 was negotiated
     if not protocol1.startswith('TLSv1.3') and protocol1 != 'TLSv1.3':
         print(f"{RED}ERROR: TLS 1.3 was not negotiated{NC}")
@@ -266,6 +268,57 @@ def test_tls13_resumption(host1, port1, host2, port2, cert_paths, check_hostname
         print(f"Cipher Suite: {tls_info1['cipher']}")
     print(f"Full TLS info: Protocol={protocol1}, Cipher={tls_info1.get('cipher', 'N/A')}")
 
+    # TLS 1.3 session tickets are sent as post-handshake messages (NewSessionTicket)
+    # We MUST read from the socket to trigger receiving these messages
+    # Simply sleeping without reading won't work!
+    print("Waiting for TLS 1.3 session ticket (reading from socket)...")
+
+    # Set socket to non-blocking for controlled reading
+    ssl_sock1.setblocking(False)
+
+    # Try to read data to trigger reception of NewSessionTicket
+    # The server sends tickets after handshake, we need to read to receive them
+    start_time = time.time()
+    timeout_secs = 3  # Wait up to 3 seconds for session ticket
+
+    while time.time() - start_time < timeout_secs:
+        try:
+            # Use select to check if data is available
+            readable, _, _ = select.select([ssl_sock1], [], [], 0.1)
+            if readable:
+                try:
+                    # Read any available data (this triggers SSL record processing)
+                    data = ssl_sock1.recv(4096)
+                    if data:
+                        print(f"  Received {len(data)} bytes from server")
+                except ssl.SSLWantReadError:
+                    pass
+                except ssl.SSLError:
+                    pass
+            else:
+                # Even without data, do a non-blocking read attempt
+                # This processes any pending SSL records (like NewSessionTicket)
+                try:
+                    ssl_sock1.recv(1)
+                except ssl.SSLWantReadError:
+                    pass
+                except ssl.SSLError:
+                    pass
+        except Exception:
+            pass
+
+        # Check if we have a session with ticket now
+        if hasattr(ssl_sock1, 'session') and ssl_sock1.session:
+            break
+
+        time.sleep(0.1)
+
+    # Restore blocking mode
+    ssl_sock1.setblocking(True)
+
+    # Re-fetch TLS info after reading (session might be updated now)
+    tls_info1 = get_tls_info(ssl_sock1)
+
     # Get session for reuse
     session1 = tls_info1.get('session')
     if session1:
@@ -288,16 +341,10 @@ def test_tls13_resumption(host1, port1, host2, port2, cert_paths, check_hostname
         ssl_sock1.close()
         return False
 
-    # Keep connection open briefly to receive session ticket
-    # TLS 1.3 tickets are sent after handshake
-    import time
-    time.sleep(1)
-
     ssl_sock1.close()
     print("")
 
     # Wait a moment before connecting to second server
-    import time
     time.sleep(1)
 
     # Second connection - resume TLS 1.3 session on second server using ticket from first server
@@ -340,7 +387,7 @@ def test_tls13_resumption(host1, port1, host2, port2, cert_paths, check_hostname
             print("")
             print(f"{GREEN}==========================================")
             print("✓ TLS 1.3 Cross-Server Session Resumption: SUCCESS")
-            print("=========================================={NC}")
+            print(f"=========================================={NC}")
             print("")
             print(f"The ticket from {host1}:{port1} was successfully")
             print(f"used to resume a session on {host2}:{port2}.")
