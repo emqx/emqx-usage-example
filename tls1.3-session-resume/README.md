@@ -78,7 +78,9 @@ The `certs/` directory contains test certificates:
 
 - `ca.pem` - Root CA certificate
 - `server-cert.pem` / `server-key.pem` - Server certificate and key
-- `client-cert.pem` / `client-key.pem` - Client certificate and key (includes intermediate CA chain)
+- `client-cert.pem` / `client-key.pem` - Client certificate and key (optional, for mTLS)
+
+**Note**: Client certificates (mTLS) are not required for TLS 1.3 session resumption. The example is configured with `verify = verify_none` by default.
 
 ## How It Works
 
