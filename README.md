@@ -15,3 +15,5 @@
 5. **[Internet of Vehicles Data Aggregation and S3 Upload](./iov-s3/README.md)**
    Solution for aggregating vehicle data into files and uploading to Amazon S3.
 
+6. **[TLS 1.3 Session Resumption](./tls1.3-session-resume/README.md)**
+   Testing TLS 1.3 session resumption with stateless tickets for fast reconnections and cross-server session sharing.
