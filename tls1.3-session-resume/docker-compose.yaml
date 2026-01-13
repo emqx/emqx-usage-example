@@ -1,12 +1,14 @@
 services:
-  emqx:
+  emqx1:
     image: emqx/emqx:5.10.3-rc.1
-    hostname: emqx
-    container_name: emqx
+    hostname: emqx1
+    container_name: emqx1
     networks:
-      - emqx-demo
+      emqx-net:
+        ipv4_address: 172.20.0.11
     environment:
       - EMQX_DASHBOARD__DEFAULT_PASSWORD=admin
+      - EMQX_NODE__NAME=emqx@172.20.0.11
     ports:
       - "18083:18083"
       - "8883:8883"
@@ -15,5 +17,27 @@ services:
       - ./config:/config
       - ./config/base.hocon:/opt/emqx/etc/base.hocon
 
+  emqx2:
+    image: emqx/emqx:5.10.3-rc.1
+    hostname: emqx2
+    container_name: emqx2
+    networks:
+      emqx-net:
+        ipv4_address: 172.20.0.12
+    environment:
+      - EMQX_DASHBOARD__DEFAULT_PASSWORD=admin
+      - EMQX_NODE__NAME=emqx@172.20.0.12
+    ports:
+      - "18084:18083"
+      - "8884:8883"
+    volumes:
+      - ./certs:/certs
+      - ./config:/config
+      - ./config/base.hocon:/opt/emqx/etc/base.hocon
+
 networks:
-  emqx-demo:
+  emqx-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24

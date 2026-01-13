@@ -63,13 +63,14 @@ node.tls_stateless_tickets_seed = "your-shared-secret-here"
 
 ### Cross-Server Resumption
 
-To test session resumption across multiple EMQX nodes:
+The example starts two independent EMQX nodes (emqx1 on port 8883, emqx2 on port 8884).
 
-1. Configure all nodes with the same `tls_stateless_tickets_seed`
-2. Run the test script with two different server endpoints:
+**Note**: We do not cluster the EMQX nodes in this demo for simplicity. TLS 1.3 stateless session tickets require no cluster state sharing — any node with the same `tls_stateless_tickets_seed` can decrypt and validate tickets issued by another node.
+
+To test cross-server resumption:
 
 ```bash
-./tls1.3-resumption-test.sh server1:8883 server2:8883
+./tls1.3-resumption-test.sh localhost:8883 localhost:8884
 ```
 
 ## Certificates
