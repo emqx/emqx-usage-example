@@ -17,3 +17,6 @@
 
 6. **[TLS 1.3 Session Resumption](./tls1.3-session-resume/README.md)**
    Testing TLS 1.3 session resumption with stateless tickets for fast reconnections and cross-server session sharing.
+
+7. **[JWT Claim Sub-String Match with ClientID](./jwt-claim-sub-string-match-clientid/README.md)**
+   Authentication using JWT tokens with client ID validation by matching a substring extracted from the JWT token's `sub` claim.

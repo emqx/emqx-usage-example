@@ -1,0 +1,23 @@
+authentication = [
+  {
+    checks = [
+      {
+        is_match = "str_neq(nth(4,tokens(jwt_value(password, 'sub'),':')), clientid)"
+        result = deny
+      }
+    ]
+    enable = true
+    mechanism = cinfo
+  },
+  {
+    algorithm = "hmac-based"
+    disconnect_after_expire = true
+    enable = true
+    from = password
+    mechanism = jwt
+    secret = jwtpassfortest1
+    secret_base64_encoded = false
+    use_jwks = false
+    verify_claims {}
+  }
+]
