@@ -1,0 +1,15 @@
+services:
+  emqx:
+    image: emqx/emqx:5.10.3-rc.1
+    hostname: emqx
+    container_name: emqx
+    environment:
+      - EMQX_DASHBOARD__DEFAULT_PASSWORD=admin
+    ports:
+      - "18083:18083"
+      - "8883:8883"
+    volumes:
+      - ./certs:/certs
+      - ./config:/config
+      - ./config/base.hocon:/opt/emqx/etc/base.hocon
+      - ./config/vm.args:/opt/emqx/etc/vm.args

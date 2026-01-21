@@ -1,0 +1,25 @@
+listeners {
+  ssl {
+    default {
+      enable = true
+      acceptors = 8
+      access_rules = [
+        "allow all"
+      ]
+      bind = "0.0.0.0:8883"
+      ssl_options {
+        cacertfile = "/certs/ca.pem"
+        certfile = "/certs/server-cert.pem"
+        keyfile = "/certs/server-key.pem"
+        fail_if_no_peer_cert = false
+        log_level = debug
+        verify = verify_none
+        versions = ["tlsv1.2"]
+        reuse_sessions = true
+      }
+    }
+  }
+  tcp.default = marked_for_deletion
+  ws.default = marked_for_deletion
+  wss.default = marked_for_deletion
+}
