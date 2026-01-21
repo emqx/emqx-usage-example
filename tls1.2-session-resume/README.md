@@ -47,6 +47,35 @@ The `config/listeners.hocon` configures:
 
 - **Enable TLS 1.2**: `versions = ["tlsv1.2"]`
 
+The `config/vm.args` configures:
+
+- **TLS 1.2 session cache size**: `-ssl session_cache_server_max 100000`
+
+  This setting controls the maximum number of TLS 1.2 sessions that can be cached in memory on the server side. Each cached session stores cryptographic state (master secret, cipher suite, etc.) that allows clients to resume sessions without a full handshake.
+
+  **What it does:**
+  - Sets the upper limit for the number of active session entries in the Erlang SSL application's session cache
+  - Erlang uses two GB-tree data structures internally to manage cached sessions and track their age
+  - When the cache is full, older sessions are evicted using an LRU (Least Recently Used) policy
+
+  **Why you might want to change it:**
+  - **Increase the value** (e.g., `200000` or `500000`) if you have:
+    - A large number of concurrent clients that frequently reconnect
+    - High-throughput scenarios where many clients need session resumption
+    - Sufficient memory available (each cached session consumes memory)
+    - Clients that reconnect to the same node and benefit from resumption
+
+  - **Decrease the value** (e.g., `10000` or `50000`) if you have:
+    - Memory constraints on the server
+    - Clients that rarely reconnect or connect to different nodes (making resumption ineffective)
+    - A need to reduce memory footprint for other operations
+
+  **Important considerations:**
+  - Session caching is **per-node** - sessions cached on one EMQX node cannot be resumed on another node
+  - The cache growth uses GB-trees with logarithmic complexity, but very large caches may still impact TLS handshake latency and system load
+  - The default Erlang SSL session cache size is 1000 sessions, so this example explicitly increases it to 100000 for better resumption support in high-concurrency scenarios
+  - Monitor memory usage and TLS handshake performance when adjusting this value in production environments
+
 ## Certificates
 
 The `certs/` directory contains test certificates:
