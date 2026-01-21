@@ -2,5 +2,5 @@
 # this dir is moutned to docker at /config
 include "/config/listeners.hocon"
 
-tls_server_session_ticket_lifetime = 120
+node.tls_server_session_ticket_lifetime = 120
 node.tls_stateless_tickets_seed = "Hey@MQTT-IamHereForU-2026-SECURE"
