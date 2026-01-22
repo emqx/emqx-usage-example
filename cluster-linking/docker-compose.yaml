@@ -1,0 +1,33 @@
+services:
+  emqx1:
+    image: emqx/emqx-enterprise:6.1.0
+    container_name: emqx1
+    hostname: emqx1
+    environment:
+      - EMQX_NODE_NAME=emqx@emqx1
+      - EMQX_cluster__name=cluster-a
+    volumes:
+      - ./base-emqx1.hocon:/opt/emqx/etc/base.hocon:ro
+    ports:
+      - "1883:1883"
+      - "18083:18083"
+    networks:
+      - emqx-link
+
+  emqx2:
+    image: emqx/emqx-enterprise:6.1.0
+    container_name: emqx2
+    hostname: emqx2
+    environment:
+      - EMQX_NODE_NAME=emqx@emqx2
+      - EMQX_cluster__name=cluster-b
+    volumes:
+      - ./base-emqx2.hocon:/opt/emqx/etc/base.hocon:ro
+    ports:
+      - "2883:1883"
+      - "18084:18083"
+    networks:
+      - emqx-link
+
+networks:
+  emqx-link:

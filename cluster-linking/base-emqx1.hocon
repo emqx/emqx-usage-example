@@ -1,0 +1,16 @@
+cluster {
+  links = [
+    {
+      name = "cluster-b"
+      server = "emqx2:11883"
+      clientid = "clink-a"
+      topics = ["linked/#"]
+    }
+  ]
+}
+
+listeners {
+  tcp.clink {
+    bind = 11883
+  }
+}
