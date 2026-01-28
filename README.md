@@ -15,11 +15,20 @@
 5. **[Internet of Vehicles Data Aggregation and S3 Upload](./iov-s3/README.md)**
    Solution for aggregating vehicle data into files and uploading to Amazon S3.
 
-6. **[TLS 1.3 Session Resumption](./tls1.3-session-resume/README.md)**
+6. **[Internet of Vehicles S3 Upload on AWS](./iov-s3-aws/README.md)**
+   Terraform-based deployment for the IoV S3 solution on AWS infrastructure.
+
+7. **[TLS 1.3 Session Resumption](./tls1.3-session-resume/README.md)**
    Testing TLS 1.3 session resumption with stateless tickets for fast reconnections and cross-server session sharing.
 
-7. **[TLS 1.2 Session Resumption](./tls1.2-session-resume/README.md)**
+8. **[TLS 1.2 Session Resumption](./tls1.2-session-resume/README.md)**
    Testing TLS 1.2 session resumption with session IDs for fast reconnections. Session caching is local to each node, so resumption only works when reconnecting to the same server node.
 
-8. **[JWT Claim Sub-String Match with ClientID](./jwt-claim-sub-string-match-clientid/README.md)**
+9. **[JWT Claim Sub-String Match with ClientID](./jwt-claim-sub-string-match-clientid/README.md)**
    Authentication using JWT tokens with client ID validation by matching a substring extracted from the JWT token's `sub` claim.
+
+10. **[Cluster Linking](./cluster-linking/README.md)**
+    Demo of EMQX Cluster Linking to enable cross-cluster pub/sub for specific topic spaces.
+
+11. **[EMQX Operator ACL Configuration](./k8s-operator-acl/README.md)**
+    Deploying EMQX on Kubernetes with file-based ACL rules using the EMQX Operator.
