@@ -5,6 +5,7 @@ mqtt {
       # If failed to extract, the attribute will not be set
       # And later ACL check will not apply if the attribute client_attrs.jwt_scp does not exist
       # See acl.conf
+      # NOTE: the 'jwt_value' function and 'password' argument require EMQX 6.1.1-rc.3 or later
       expression = """nth(2,regex_extract(jwt_value(password, 'scp'),'(^|\s)(read)(\s|$)'))"""
       set_as_attr = jwt_scp
     }

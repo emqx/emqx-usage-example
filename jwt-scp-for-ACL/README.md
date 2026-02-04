@@ -1,5 +1,7 @@
 # JWT `scp` Claim for ACL
 
+NOTE: Require EMQX 6.1.1-rc.3 or later.
+
 This example demonstrates how to:
 - parse an ADFS-style `scp` claim from JWT (`"read openid foobar"`),
 - extract `read` with `regex_extract`,
