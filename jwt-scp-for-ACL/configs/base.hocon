@@ -1,0 +1,38 @@
+mqtt {
+  client_attrs_init = [
+    {
+      # Extract the 'read' substring from JQT scp claim.
+      # If failed to extract, the attribute will not be set
+      # And later ACL check will not apply if the attribute client_attrs.jwt_scp does not exist
+      # See acl.conf
+      expression = """nth(2,regex_extract(jwt_value(password, 'scp'),'(^|\s)(read)(\s|$)'))"""
+      set_as_attr = jwt_scp
+    }
+  ]
+}
+
+authentication = [
+  {
+    algorithm = "hmac-based"
+    disconnect_after_expire = true
+    enable = true
+    from = password
+    mechanism = jwt
+    secret = jwtpassfortest1
+    secret_base64_encoded = false
+    use_jwks = false
+    verify_claims {}
+  }
+]
+
+authorization {
+  no_match = deny
+  deny_action = ignore
+  sources = [
+    {
+      type = file
+      enable = true
+      path = "etc/configs/acl.conf"
+    }
+  ]
+}

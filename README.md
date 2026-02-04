@@ -23,3 +23,6 @@
 
 8. **[JWT Claim Sub-String Match with ClientID](./jwt-claim-sub-string-match-clientid/README.md)**
    Authentication using JWT tokens with client ID validation by matching a substring extracted from the JWT token's `sub` claim.
+
+9. **[JWT `scp` Claim in ACL](./jwt-scp-for-ACL/README.md)**
+   JWT authentication with `scp` regex validation, JWT-provided client attributes, and templated subscription authorization.
