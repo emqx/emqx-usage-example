@@ -43,6 +43,10 @@ CA_CERT="${CERT_DIR}/ca.pem"
 CLIENT_CERT="${CERT_DIR}/client-cert.pem"
 CLIENT_KEY="${CERT_DIR}/client-key.pem"
 
+# Delay between ticket capture and ticket reuse.
+# Increase this above server ticket lifetime (e.g. >10s) to test expiry.
+TLS_RESUME_SLEEP_SECONDS="${TLS_RESUME_SLEEP_SECONDS:-1}"
+
 # Check if certificates exist
 if [ ! -f "$CA_CERT" ]; then
     echo "Warning: CA certificate not found at $CA_CERT (certificate verification may fail)"
@@ -75,6 +79,7 @@ echo "TLS 1.3 Cross-Server Session Resumption Test"
 echo "=========================================="
 echo "First Server (get ticket):  ${TLS_HOST_1}:${TLS_PORT_1}"
 echo "Second Server (use ticket): ${TLS_HOST_2}:${TLS_PORT_2}"
+echo "Delay before reuse:          ${TLS_RESUME_SLEEP_SECONDS}s"
 echo ""
 echo "This test verifies that stateless TLS 1.3 tickets can be"
 echo "shared across servers that use the same ticket seed/key."
@@ -227,7 +232,7 @@ fi
 echo ""
 
 # Wait a moment before connecting to second server
-sleep 1
+sleep "$TLS_RESUME_SLEEP_SECONDS"
 
 # Second connection - resume TLS 1.3 session on second server using ticket from first server
 echo "--- Second Connection (Resume TLS 1.3 Session on ${TLS_HOST_2}:${TLS_PORT_2}) ---"
@@ -254,12 +259,9 @@ else
 fi
 
 # Check for TLS resumption indicators in the second connection log
-RESUMED=$(grep -aiE "Reused|Resumed" /tmp/tls_second.log 2>/dev/null || true)
-PSK_USED=$(grep -aiE "PSK|Pre.*Shared.*Key" /tmp/tls_second.log 2>/dev/null || true)
-EARLY_DATA=$(grep -aiE "Early data" /tmp/tls_second.log 2>/dev/null | grep -vi "not sent" || true)
-
-# For TLS 1.3, check if ticket was used (look for PSK extension or resumption)
-TLS13_RESUMPTION=$(grep -aiE "TLSv1\.3.*Reused|PSK.*accepted|Resumption.*PSK" /tmp/tls_second.log 2>/dev/null || true)
+# For OpenSSL s_client, a resumed session is explicitly shown as:
+#   Reused, TLSv1.3, Cipher is ...
+RESUMED=$(strings /tmp/tls_second.log 2>/dev/null | grep -aE "^[[:space:]]*Reused, TLSv" | head -1 || true)
 
 echo "--- Verification ---"
 echo "First connection (${TLS_HOST_1}:${TLS_PORT_1}):  TLS $TLS_VERSION${TLS_CIPHER:+ ($TLS_CIPHER)}"
@@ -272,53 +274,8 @@ echo ""
 # Verify that TLS 1.3 session ticket was received and used
 echo "Checking TLS 1.3 session ticket status..."
 TICKET_USED=false
-
-# Check for resumption indicators in second connection log
-# Look for explicit resumption messages
-if grep -aqiE "Reused|Resumed" /tmp/tls_second.log 2>/dev/null; then
+if [ -n "$RESUMED" ]; then
     TICKET_USED=true
-fi
-
-# Check for PSK-related messages (TLS 1.3 uses PSK for resumption)
-# "Resumption PSK:" with a value indicates a ticket was received and used
-if grep -aqiE "Resumption PSK:" /tmp/tls_second.log 2>/dev/null; then
-    # Check if there's actually a PSK value (not just "None")
-    RESUMPTION_PSK=$(grep -ai "Resumption PSK:" /tmp/tls_second.log 2>/dev/null | head -1 | sed 's/.*Resumption PSK: *//' | tr -d ' ' || echo "")
-    if [ -n "$RESUMPTION_PSK" ] && [ "$RESUMPTION_PSK" != "None" ] && [ "$RESUMPTION_PSK" != "" ]; then
-        TICKET_USED=true
-        echo "  Found Resumption PSK indicator (ticket was used)"
-    fi
-fi
-
-# Also check for other PSK acceptance patterns
-if grep -aqiE "PSK.*accepted|PSK.*used|Pre.*Shared.*Key.*accepted" /tmp/tls_second.log 2>/dev/null; then
-    TICKET_USED=true
-fi
-
-# Check for "Early data" which indicates resumption
-# But exclude "Early data was not sent" which doesn't indicate resumption
-EARLY_DATA_LINE=$(grep -aqiE "Early data" /tmp/tls_second.log 2>/dev/null | grep -vi "not sent" | head -1 || echo "")
-if [ -n "$EARLY_DATA_LINE" ]; then
-    TICKET_USED=true
-fi
-
-# Check for "Max Early Data" which indicates resumption support
-if grep -aqiE "Max Early Data:" /tmp/tls_second.log 2>/dev/null; then
-    MAX_EARLY_DATA=$(grep -ai "Max Early Data:" /tmp/tls_second.log 2>/dev/null | head -1 | sed 's/.*Max Early Data: *//' | tr -d ' ' || echo "")
-    if [ -n "$MAX_EARLY_DATA" ] && [ "$MAX_EARLY_DATA" != "0" ] && [ "$MAX_EARLY_DATA" != "" ]; then
-        TICKET_USED=true
-        echo "  Found Max Early Data indicator (resumption supported)"
-    fi
-fi
-
-# Also check the raw log file (not just strings output) for resumption PSK
-# This catches cases where the PSK might be in binary sections
-if grep -aqi "Resumption PSK:" /tmp/tls_second.log 2>/dev/null; then
-    RESUMPTION_PSK_RAW=$(grep -ai "Resumption PSK:" /tmp/tls_second.log 2>/dev/null | head -1 | sed 's/.*Resumption PSK: *//' | head -c 50 || echo "")
-    if [ -n "$RESUMPTION_PSK_RAW" ] && [ "$RESUMPTION_PSK_RAW" != "None" ]; then
-        TICKET_USED=true
-        echo "  Found Resumption PSK in raw log (ticket was used)"
-    fi
 fi
 
 if [ "$TICKET_USED" = "false" ]; then
@@ -344,8 +301,8 @@ if [ "$TICKET_USED" = "false" ]; then
     echo "Second connection log (checking for resumption):"
     strings /tmp/tls_second.log 2>/dev/null | grep -a "New, TLSv" | head -5
     echo ""
-    echo "Resumption indicators searched for: Reused, Resumed, PSK, Early data"
-    strings /tmp/tls_second.log 2>/dev/null | grep -iE "reused|resumed|psk|early" | head -5 || echo "  None found"
+    echo "Resumption indicator searched for: Reused, TLSv..."
+    strings /tmp/tls_second.log 2>/dev/null | grep -aE "Reused, TLSv|New, TLSv|Resumption PSK|Max Early Data" | head -10 || echo "  None found"
     echo ""
     rm -f "$SESSION_FILE" /tmp/tls_first.log /tmp/tls_second.log
     exit 1
@@ -361,25 +318,15 @@ RESUMPTION_SUCCESS=false
 if [ -n "$RESUMED" ]; then
     echo "Session resumption detected: $RESUMED"
     RESUMPTION_SUCCESS=true
-elif [ -n "$PSK_USED" ] && [ -n "$(echo "$PSK_USED" | grep -i "accepted\|used")" ]; then
-    echo "PSK (Pre-Shared Key) accepted - session was resumed"
-    echo "  Details: $PSK_USED"
-    RESUMPTION_SUCCESS=true
-elif [ -n "$EARLY_DATA" ]; then
-    echo "Early data indication - session was resumed"
-    RESUMPTION_SUCCESS=true
-elif [ -n "$TLS13_RESUMPTION" ]; then
-    echo "TLS 1.3 resumption detected: $TLS13_RESUMPTION"
-    RESUMPTION_SUCCESS=true
 fi
 
 # If still not detected, show debug info
 if [ "$RESUMPTION_SUCCESS" = "false" ]; then
     echo "Debug: Checking logs for resumption indicators..."
     echo "  RESUMED: ${RESUMED:-<not found>}"
-    echo "  PSK_USED: ${PSK_USED:-<not found>}"
-    echo "  EARLY_DATA: ${EARLY_DATA:-<not found>}"
-    echo "  TLS13_RESUMPTION: ${TLS13_RESUMPTION:-<not found>}"
+    echo "  Expected indicator: Reused, TLSv..."
+    echo "  Found handshake line:"
+    strings /tmp/tls_second.log 2>/dev/null | grep -aE "Reused, TLSv|New, TLSv" | head -1 || echo "    <not found>"
     echo ""
     echo "Second connection log (last 30 lines):"
     tail -30 /tmp/tls_second.log 2>/dev/null || echo "Log file not found or empty"
