@@ -1,0 +1,103 @@
+name: dynamic-tenant-auth
+
+x-demo-image: &demo-image
+  image: emqx-dynamic-tenant-auth-demo:local
+  build: .
+
+x-auth: &auth
+  <<: *demo-image
+  command: ["python", "auth_server.py"]
+  depends_on:
+    certs:
+      condition: service_completed_successfully
+  healthcheck:
+    test: ["CMD", "python", "healthcheck.py"]
+    interval: 2s
+    timeout: 3s
+    retries: 20
+
+services:
+  certs:
+    <<: *demo-image
+    command: ["sh", "generate-certs.sh"]
+    volumes:
+      - ca:/ca
+      - north-tls:/north
+      - south-tls:/south
+
+  north-auth:
+    <<: *auth
+    environment:
+      TENANT: north
+      DEVICE_USERNAME: north/device17
+      DEVICE_PASSWORD: north-device-password
+      SERVICE_API_KEY: north-demo-service-key
+      ENABLE_TEST_API: "true"
+    volumes:
+      - ca:/ca:ro
+      - north-tls:/tls:ro
+    networks:
+      default:
+        aliases:
+          - north.auth.example.com
+          # Resolves deliberately: the unknown-tenant test must hit the allow list,
+          # rather than failing only because DNS cannot resolve the hostname.
+          - west.auth.example.com
+
+  south-auth:
+    <<: *auth
+    environment:
+      TENANT: south
+      DEVICE_USERNAME: south/device42
+      DEVICE_PASSWORD: south-device-password
+      SERVICE_API_KEY: south-demo-service-key
+      ENABLE_TEST_API: "true"
+    volumes:
+      - ca:/ca:ro
+      - south-tls:/tls:ro
+    networks:
+      default:
+        aliases:
+          - south.auth.example.com
+
+  emqx:
+    image: emqx/emqx-enterprise:6.3.1
+    hostname: emqx.local
+    environment:
+      EMQX_NODE__NAME: emqx@emqx.local
+      EMQX_NODE__COOKIE: dynamic-tenant-auth-local-demo
+      EMQX_SECURITY_PROFILE: hardened
+      EMQX_FEATURES: ESSENTIAL
+      EMQXVAR_north_auth_token: north-demo-service-key
+      EMQXVAR_south_auth_token: south-demo-service-key
+    depends_on:
+      north-auth:
+        condition: service_healthy
+      south-auth:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${MQTT_PORT:-1883}:1883"
+    volumes:
+      - ./base.hocon:/opt/emqx/etc/base.hocon:ro
+      - ca:/opt/emqx/etc/auth-ca:ro
+    healthcheck:
+      test: ["CMD", "/opt/emqx/bin/emqx", "ctl", "status"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
+
+  tests:
+    <<: *demo-image
+    profiles: [test]
+    command: ["python", "test_routing.py"]
+    depends_on:
+      emqx:
+        condition: service_healthy
+    volumes:
+      - ca:/ca:ro
+
+volumes:
+  ca:
+  north-tls:
+  south-tls:
