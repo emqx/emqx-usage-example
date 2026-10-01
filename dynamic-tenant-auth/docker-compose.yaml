@@ -61,10 +61,11 @@ services:
           - south.auth.example.com
 
   emqx:
-    image: emqx/emqx-enterprise:6.3.0
+    image: emqx/emqx-enterprise:6.3.1
     hostname: emqx.local
     environment:
       EMQX_NODE__NAME: emqx@emqx.local
+      EMQX_NODE__COOKIE: dynamic-tenant-auth-local-demo
       EMQX_SECURITY_PROFILE: hardened
       EMQX_FEATURES: ESSENTIAL
       EMQXVAR_north_auth_token: north-demo-service-key
@@ -77,7 +78,7 @@ services:
     ports:
       - "127.0.0.1:${MQTT_PORT:-1883}:1883"
     volumes:
-      - ./emqx.conf:/opt/emqx/etc/emqx.conf:ro
+      - ./base.hocon:/opt/emqx/etc/base.hocon:ro
       - ca:/opt/emqx/etc/auth-ca:ro
     healthcheck:
       test: ["CMD", "/opt/emqx/bin/emqx", "ctl", "status"]

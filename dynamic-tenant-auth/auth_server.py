@@ -26,7 +26,7 @@ class Handler(BaseHTTPRequestHandler):
     def reply(self, status, body):
         data = json.dumps(body).encode()
         self.send_response(status)
-        # EMQX 6.3.0's dynamic HTTP path looks up this response name in lowercase.
+        # EMQX 6.3.0/6.3.1's dynamic HTTP path looks up this name in lowercase.
         self.send_header("content-type", "application/json")
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()

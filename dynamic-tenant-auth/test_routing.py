@@ -1,4 +1,4 @@
-"""Integration tests against EMQX 6.3.0, using real MQTT 5 packets and HTTPS."""
+"""Integration tests against EMQX 6.3.1, using real MQTT 5 packets and HTTPS."""
 
 import json
 import queue

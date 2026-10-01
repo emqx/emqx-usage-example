@@ -1,6 +1,6 @@
 # Dynamic Multi-Tenant Auth Routing
 
-Run EMQX 6.3.0 with two independent HTTPS authentication and authorization services. A username prefix selects the tenant service; the service validates the device and decides which topics it may use. EMQX supplies a different API key to each service without requiring devices to know those keys.
+Run EMQX 6.3.1 with two independent HTTPS authentication and authorization services. A username prefix selects the tenant service; the service validates the device and decides which topics it may use. EMQX supplies a different API key to each service without requiring devices to know those keys.
 
 | MQTT username | Device password | HTTP service | Allowed topics |
 |---|---|---|---|
@@ -26,7 +26,7 @@ The test command exits nonzero on failure. It exercises real MQTT 5 connections 
 docker compose logs north-auth south-auth
 ```
 
-Verified on 2026-10-01 with `emqx/emqx-enterprise:6.3.0` on Linux/arm64: all 10 integration tests passed.
+Verified on 2026-10-01 with `emqx/emqx-enterprise:6.3.1` on Linux/arm64: all 10 integration tests passed.
 
 Each log entry identifies the tenant, endpoint, client, action, topic and decision. `api_key_valid` shows whether the correct service key arrived; the key and device password are omitted.
 
@@ -44,7 +44,9 @@ This removes this Compose project's containers, network and certificate volumes.
 
 ## Configuration
 
-[`emqx.conf`](emqx.conf) contains one HTTP authenticator and one HTTP authorization source. Both use:
+[`base.hocon`](base.hocon) contains the example's listener, client-attribute, authentication and authorization settings. Compose mounts it at `/opt/emqx/etc/base.hocon` and keeps the image's default `emqx.conf`. The demo node name and cookie are supplied through environment variables.
+
+The HTTP authenticator and authorization source both use:
 
 ```hocon
 url = "https://${client_attrs.tenant}.auth.example.com/authn"
@@ -56,11 +58,13 @@ headers {
 }
 ```
 
-The authorization URL ends in `/authz`. TLS peer verification is enabled and uses the generated CA. EMQX extracts `tenant` from the username and evaluates `getenv()` to populate `auth_token` from `EMQXVAR_north_auth_token` or `EMQXVAR_south_auth_token`. Both expressions extract the username prefix independently: one initializer cannot read an attribute created by another.
+The authorization URL ends in `/authz`. The explicit allow list restricts requests to the two provisioned tenant services. An unlisted hostname such as `west.auth.example.com` is rejected before HTTP, even when its DNS and TLS work. The tests verify this boundary.
+
+TLS peer verification is enabled and uses the generated CA. EMQX extracts `tenant` from the username and evaluates `getenv()` to populate `auth_token` from `EMQXVAR_north_auth_token` or `EMQXVAR_south_auth_token`. Both expressions extract the username prefix independently: one initializer cannot read an attribute created by another.
 
 [`auth_server.py`](auth_server.py) checks the broker's API key on both endpoints. `/authn` also checks the full username and device password, returning `is_superuser: false` on success. `/authz` checks the authenticated username, action and tenant topic prefix. Explicit decisions use HTTP 200 with a JSON `result` of `allow` or `deny`.
 
-**EMQX 6.3.0 compatibility:** send the response header as lowercase `content-type: application/json`. In this version, the dynamic HTTP path preserves response-header casing but the authentication parser looks up `content-type` in lowercase. The service uses lowercase explicitly.
+**EMQX 6.3.0 and 6.3.1 compatibility:** send the response header as lowercase `content-type: application/json`. In these versions, the dynamic HTTP path preserves response-header casing but the authentication parser looks up `content-type` in lowercase. The service uses lowercase explicitly.
 
 The custom `tenant` attribute routes requests. It does not assign an EMQX namespace (`tns`) or add a topic mountpoint. The backend's topic policy provides the isolation demonstrated here.
 

@@ -1,6 +1,3 @@
-node.cookie = "dynamic-tenant-auth-local-demo"
-node.data_dir = "/opt/emqx/data"
-log.console.level = warning
 telemetry.enable = false
 
 listeners.tcp.default.bind = "0.0.0.0:1883"

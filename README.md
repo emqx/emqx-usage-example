@@ -37,4 +37,4 @@
    Deploying EMQX on Kubernetes with file-based ACL rules using the EMQX Operator.
 
 13. **[Dynamic Multi-Tenant Auth Routing](./dynamic-tenant-auth/README.md)**
-   EMQX 6.3.0 routes HTTP authentication and authorization to tenant-specific HTTPS services, with separate service API keys and automated MQTT integration tests.
+   EMQX 6.3 routes HTTP authentication and authorization to tenant-specific HTTPS services, with separate service API keys and automated MQTT integration tests.
